@@ -21,10 +21,10 @@ services:
         generateValue: true
       - key: DB_CONNECTION
         value: pgsql
-      - key: DB_HOST
-        fromDatabase:
-          name: portal-monitoring-db
-          property: host
+- key: DB_HOST
+  fromDatabase:
+    name: portal-monitoring-db
+    property: host
       - key: DB_PORT
         fromDatabase:
           name: portal-monitoring-db
@@ -54,8 +54,3 @@ services:
       - key: VITE_API_URL
         value: https://portal-monitoring-backend.onrender.com/api
 
-# Database PostgreSQL
-databases:
-  - name: portal-monitoring-db
-    databaseName: portal_monitoring
-    user: portal_user

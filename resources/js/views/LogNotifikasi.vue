@@ -78,7 +78,13 @@ function iconClass(type) {
 }
 
 onMounted(async () => {
-  const res = await api.get('/notification-logs')
-  logs.value = res.data.data
+  loading.value = true
+  try {
+    const res = await api.get('/notification-logs')
+    // Filter hanya notif untuk PIC yang login
+    logs.value = (res.data.data || []).filter(l => l.pic_id === auth.user?.id)
+  } finally {
+    loading.value = false
+  }
 })
 </script>
