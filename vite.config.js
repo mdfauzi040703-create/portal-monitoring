@@ -1,26 +1,10 @@
 import { defineConfig } from 'vite'
 import laravel from 'laravel-vite-plugin'
-import vue from '@vitejs/plugin-vue'
-import { defineConfig } from 'vite'
 
 export default defineConfig({
-    plugins: [
-        laravel({
-            input: ['resources/css/app.css', 'resources/js/app.js'],
-            refresh: true,
-        }),
-        vue(),
-    ],
-    resolve: {
-        alias: {
-            vue: 'vue/dist/vue.esm-bundler.js',
-        },
-    },
-})
-
-export default defineConfig({
+  plugins: [laravel(['resources/js/app.js'])],
   server: {
-    host: true, // biar bisa diakses dari luar
+    host: true, // penting agar bisa diakses dari luar
     allowedHosts: [
       'renegade-italicize-fraction.ngrok-free.dev'
     ]
