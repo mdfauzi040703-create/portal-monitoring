@@ -4,7 +4,7 @@ import laravel from 'laravel-vite-plugin'
 export default defineConfig({
   plugins: [laravel(['resources/js/app.js'])],
   server: {
-    host: true, // penting agar bisa diakses dari luar
+    host: true,
     allowedHosts: [
       'renegade-italicize-fraction.ngrok-free.dev'
     ]
