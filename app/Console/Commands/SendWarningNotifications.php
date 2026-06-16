@@ -62,19 +62,27 @@ class SendWarningNotifications extends Command {
             }
 
             // Kirim WhatsApp via Fonnte
-            if ($doc->pic->whatsapp) {
-                try {
-                    $response = Http::withHeaders([
-                        'Authorization' => env('FONNTE_TOKEN'),
-                    ])->post('https://api.fonnte.com/send', [
-                        'target'  => $doc->pic->whatsapp,
-                        'message' => $message,
-                    ]);
-                    $waSent = $response->successful();
-                } catch (\Exception $e) {
-                    $this->error("WA gagal: " . $e->getMessage());
-                }
-            }
+// Kirim WhatsApp via Fonnte
+if ($doc->pic->whatsapp) {
+    try {
+        $token = env('FONNTE_TOKEN');
+        $this->info("Token Fonnte: " . ($token ? substr($token, 0, 5) . '...' : 'KOSONG/NULL'));
+
+        $response = Http::withHeaders([
+            'Authorization' => $token,
+        ])->post('https://api.fonnte.com/send', [
+            'target'  => $doc->pic->whatsapp,
+            'message' => $message,
+        ]);
+
+        $this->info("Status: " . $response->status());
+        $this->info("Body: " . $response->body());
+
+        $waSent = $response->successful();
+    } catch (\Exception $e) {
+        $this->error("WA gagal: " . $e->getMessage());
+    }
+}
 
             // Update status dokumen
             $doc->status = $type;
