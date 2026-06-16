@@ -34,4 +34,16 @@ class UserController extends Controller {
         $user->delete();
         return response()->json(['message' => 'User dihapus']);
     }
+
+    public function update(Request $request, User $user) {
+    $request->validate([
+        'name'     => 'required|string',
+        'whatsapp' => 'nullable|string',
+    ]);
+
+    $user->update($request->only(['name', 'whatsapp']));
+
+    return response()->json($user);
+}
+
 }

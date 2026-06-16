@@ -43,7 +43,13 @@
 
       <!-- Pie per project -->
       <div class="col-span-2 bg-white border border-gray-200 rounded-xl p-4">
-        <div class="text-sm font-medium mb-4">Per Project</div>
+        <div class="flex items-center justify-between mb-4">
+  <div class="text-sm font-medium">Per Project</div>
+  <button @click="showAddProject = true"
+    class="flex items-center gap-1 text-xs border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition">
+    + Tambah Project
+  </button>
+</div>
         <div v-if="projects.length === 0"
           class="flex flex-col items-center justify-center py-8 border border-dashed border-gray-200 rounded-xl text-gray-400">
           <svg class="w-8 h-8 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 7h18M3 12h18M3 17h18"/></svg>
@@ -51,8 +57,14 @@
         </div>
         <div v-else class="grid grid-cols-3 gap-3">
           <div v-for="p in projects" :key="p.id"
-            @click="openDetail(p)"
-            class="border border-gray-200 rounded-xl p-3 flex flex-col items-center gap-2 cursor-pointer hover:border-blue-300 hover:shadow-sm transition">
+  @click="openDetail(p)"
+  class="border border-gray-200 rounded-xl p-3 flex flex-col items-center gap-2 cursor-pointer hover:border-blue-300 hover:shadow-sm transition relative group">
+  <button @click.stop="deleteProject(p.id)"
+    class="absolute top-2 right-2 w-6 h-6 rounded-full bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-600 transition items-center justify-center hidden group-hover:flex">
+    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+    </svg>
+  </button>
             <div class="text-xs font-semibold text-center">{{ p.name }}</div>
             <canvas :ref="el => setPieRef(el, p.id)" width="90" height="90"></canvas>
             <div class="text-xs text-gray-500">{{ p.selesai_count }}/{{ p.total_count }} selesai</div>
@@ -67,57 +79,29 @@
       </div>
     </div>
 
-    <!-- Tabel riwayat -->
-    <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
-      <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-        <div class="text-sm font-medium">Proyek yang Saya Input</div>
-        <router-link to="/asisten/input-proyek"
-          class="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition">
-          + Input Proyek Baru
-        </router-link>
-      </div>
-      <table class="w-full text-sm">
-        <thead>
-          <tr class="border-b border-gray-100 bg-gray-50">
-            <th class="text-left px-4 py-3 text-xs text-gray-500 font-medium">#</th>
-            <th class="text-left px-4 py-3 text-xs text-gray-500 font-medium">Nomor Dokumen</th>
-            <th class="text-left px-4 py-3 text-xs text-gray-500 font-medium">Project</th>
-            <th class="text-left px-4 py-3 text-xs text-gray-500 font-medium">Tgl Input</th>
-            <th class="text-left px-4 py-3 text-xs text-gray-500 font-medium">PIC (dari Manager)</th>
-            <th class="text-left px-4 py-3 text-xs text-gray-500 font-medium">Deadline</th>
-            <th class="text-left px-4 py-3 text-xs text-gray-500 font-medium">Status Pengiriman</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="(doc, i) in myDocs" :key="doc.id"
-            class="border-b border-gray-50 hover:bg-gray-50 transition">
-            <td class="px-4 py-3 text-gray-400 text-xs">{{ String(i+1).padStart(3,'0') }}</td>
-            <td class="px-4 py-3 font-medium text-xs">{{ doc.nomor_dokumen }}</td>
-            <td class="px-4 py-3">
-              <span class="bg-blue-50 text-blue-700 text-xs px-2 py-0.5 rounded-full border border-blue-100">
-                {{ doc.project?.name }}
-              </span>
-            </td>
-            <td class="px-4 py-3 text-xs text-gray-500 font-mono">{{ formatDateTime(doc.created_at) }}</td>
-            <td class="px-4 py-3 text-xs">
-              <span v-if="doc.pic" class="text-blue-600 font-medium">{{ doc.pic?.name }}</span>
-              <span v-else class="text-gray-300">Belum diassign</span>
-            </td>
-            <td class="px-4 py-3 text-xs text-gray-500">
-              {{ doc.review_deadline ? formatDate(doc.review_deadline) : '—' }}
-            </td>
-            <td class="px-4 py-3">
-              <span :class="submitStatusClass(doc.submit_status)" class="text-xs px-2 py-0.5 rounded-full border font-medium">
-                {{ submitStatusLabel(doc.submit_status) }}
-              </span>
-            </td>
-          </tr>
-          <tr v-if="myDocs.length === 0">
-            <td colspan="7" class="px-4 py-10 text-center text-gray-400 text-sm">Belum ada proyek yang diinput</td>
-          </tr>
-        </tbody>
-      </table>
+    <div class="bg-white border border-gray-200 rounded-xl p-5 flex items-center justify-between">
+  <div>
+    <div class="text-sm font-medium">Lihat dan kelola proyek yang Anda input</div>
+    <div class="text-xs text-gray-400 mt-0.5">Riwayat lengkap, status pengiriman, dan tombol kirim ke Manager ada di Input Proyek</div>
+  </div>
+  <router-link to="/asisten/input-proyek"
+    class="text-xs bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition whitespace-nowrap">
+    Buka Input Proyek →
+  </router-link>
+</div>
+
+    <!-- Modal tambah project -->
+<div v-if="showAddProject" class="fixed inset-0 bg-black/40 flex items-center justify-center z-[999]">
+  <div class="bg-white rounded-2xl p-6 w-80 border border-gray-200 shadow-xl">
+    <div class="text-base font-semibold mb-4">Tambah Project Baru</div>
+    <input v-model="newProjectName" type="text" placeholder="Nama project"
+      class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"/>
+    <div class="flex gap-2 justify-end mt-4">
+      <button @click="showAddProject = false" class="text-sm px-4 py-2 border border-gray-200 rounded-lg">Batal</button>
+      <button @click="addProject" class="text-sm px-4 py-2 bg-gray-900 text-white rounded-lg">Tambah</button>
     </div>
+  </div>
+</div>
 
     <!-- Modal detail project -->
     <div v-if="showDetail" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
@@ -158,6 +142,20 @@
             <span class="text-xs font-semibold text-gray-700">{{ detailDocs.length }}</span>
           </div>
         </div>
+        <div v-if="recentlyDone.length > 0"
+  class="bg-green-50 border border-green-200 rounded-xl p-4 mb-5 flex items-center gap-3">
+  <svg class="w-5 h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+  </svg>
+  <div>
+    <div class="text-sm font-medium text-green-700">{{ recentlyDone.length }} dokumen baru selesai dikirim PIC</div>
+    <div class="text-xs text-green-600 mt-0.5">Cek di menu Semua Dokumen untuk lihat file yang dikirim.</div>
+  </div>
+  <router-link to="/manager/dokumen"
+    class="ml-auto text-xs bg-green-600 text-white px-3 py-1.5 rounded-lg hover:bg-green-700 transition whitespace-nowrap">
+    Lihat sekarang →
+  </router-link>
+</div>
 
         <!-- Tab filter -->
         <div class="px-6 py-2 border-b border-gray-100 flex gap-2 flex-shrink-0 flex-wrap">
@@ -220,6 +218,40 @@
       </div>
     </div>
   </div>
+<!-- Toast -->
+<div v-if="toastMsg"
+  class="fixed bottom-5 right-5 text-white text-sm px-4 py-3 rounded-xl shadow-lg flex items-center gap-2 z-50"
+  :class="toastType === 'error' ? 'bg-red-600' : 'bg-green-600'">
+  {{ toastMsg }}
+</div>
+
+<!-- Modal konfirmasi hapus -->
+<div v-if="showConfirm" class="fixed inset-0 bg-black/40 flex items-center justify-center z-[999]">
+  <div class="bg-white rounded-2xl p-6 w-80 border border-gray-200 shadow-xl">
+    <div class="flex items-center gap-3 mb-4">
+      <div class="w-10 h-10 rounded-full bg-red-100 text-red-600 flex items-center justify-center flex-shrink-0">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+        </svg>
+      </div>
+      <div>
+        <div class="text-sm font-semibold text-gray-900">Hapus Project</div>
+        <div class="text-xs text-gray-500 mt-0.5">Semua dokumen di dalamnya juga akan terhapus.</div>
+      </div>
+    </div>
+    <div class="flex gap-2 justify-end">
+      <button @click="showConfirm = false"
+        class="text-sm px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition">
+        Batal
+      </button>
+      <button @click="confirmDeleteProject"
+        class="text-sm px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition">
+        Ya, Hapus
+      </button>
+    </div>
+  </div>
+</div>
+
 </template>
 
 <script setup>
@@ -227,6 +259,12 @@ import { ref, computed, onMounted, nextTick } from 'vue'
 import api from '../../axios'
 import StatusBadge from '../../components/StatusBadge.vue'
 import { useAuthStore } from '../../stores/auth'
+const showAddProject = ref(false)
+const showConfirm     = ref(false)
+const deleteProjectId = ref(null)
+const newProjectName = ref('')
+const toastMsg        = ref('')
+const toastType       = ref('success')
 
 const auth            = useAuthStore()
 const myDocs          = ref([])
@@ -251,6 +289,14 @@ const summary = computed(() => ({
   running: myDocs.value.filter(d => d.submit_status === 'assigned').length,
   done:    myDocs.value.filter(d => d.submit_status === 'selesai').length,
 }))
+
+const recentlyDone = computed(() => {
+  const yesterday = new Date()
+  yesterday.setDate(yesterday.getDate() - 1)
+  return docs.value.filter(d =>
+    d.return_actual_date && new Date(d.return_actual_date) >= yesterday
+  )
+})
 
 const filteredDetail = computed(() => {
   if (activeDetailTab.value === 'semua') return detailDocs.value
@@ -361,7 +407,38 @@ function submitStatusClass(s) {
   }[s] || ''
 }
 
-onMounted(async () => {
+function showToast(msg, type = 'success') {
+  toastMsg.value  = msg
+  toastType.value = type
+  setTimeout(() => toastMsg.value = '', 3000)
+}
+
+async function addProject() {
+  if (!newProjectName.value) return
+  await api.post('/projects', { name: newProjectName.value })
+  newProjectName.value = ''
+  showAddProject.value = false
+  showToast('Project berhasil ditambahkan!')
+  loadDashboard()
+}
+
+function deleteProject(id) {
+  deleteProjectId.value = id
+  showConfirm.value     = true
+}
+
+async function confirmDeleteProject() {
+  showConfirm.value = false
+  try {
+    await api.delete(`/projects/${deleteProjectId.value}`)
+    showToast('Project berhasil dihapus!')
+    loadDashboard()
+  } catch (e) {
+    showToast(e.response?.data?.message || 'Gagal menghapus project', 'error')
+  }
+}
+
+async function loadDashboard() {
   const res    = await api.get('/documents')
   myDocs.value = res.data.filter(d => d.asisten_id === auth.user?.id)
   buildProjects()
@@ -370,5 +447,7 @@ onMounted(async () => {
   const s = summary.value
   drawPie(pieTotal.value, s.done, s.running, s.waiting, s.total)
   drawProjectPies()
-})
+}
+
+onMounted(loadDashboard)
 </script>

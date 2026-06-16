@@ -6,20 +6,32 @@ use App\Models\Document;
 use Illuminate\Http\Request;
 
 class DocumentController extends Controller {
-    public function index(Request $request) {
-$query = Document::with(['project','pic','atasan','asisten'])
-    ->orderBy('created_at','desc');
+public function index(Request $request) {
+    $query = Document::with(['project','pic','atasan','asisten'])
+        ->orderBy('created_at','desc');
 
-        if ($request->status)     $query->where('status', $request->status);
-        if ($request->project_id) $query->where('project_id', $request->project_id);
-        if ($request->search)     $query->where('nomor_dokumen','like','%'.$request->search.'%');
-        if ($request->submit_status) $query->where('submit_status', $request->submit_status);
-        if ($request->asisten_id) $query->where('asisten_id', $request->asisten_id);
-        if ($request->atasan_id)  $query->where('atasan_id', $request->atasan_id);
-        if ($request->pic_id)     $query->where('pic_id', $request->pic_id);
-
-        return response()->json($query->get());
+    // Isolasi data per Manager: hanya lihat dokumen yang dia assign sendiri
+    $user = $request->user();
+    if ($user && $user->role === 'manager') {
+        $query->where(function($q) use ($user) {
+            $q->where('atasan_id', $user->id)
+              ->orWhere(function($q2) {
+                  // Tetap bisa lihat dokumen yang belum diassign siapapun (submitted, belum di-assign)
+                  $q2->whereNull('atasan_id')->where('submit_status', 'submitted');
+              });
+        });
     }
+
+    if ($request->status)     $query->where('status', $request->status);
+    if ($request->project_id) $query->where('project_id', $request->project_id);
+    if ($request->search)     $query->where('nomor_dokumen','like','%'.$request->search.'%');
+    if ($request->submit_status) $query->where('submit_status', $request->submit_status);
+    if ($request->asisten_id) $query->where('asisten_id', $request->asisten_id);
+    if ($request->atasan_id)  $query->where('atasan_id', $request->atasan_id);
+    if ($request->pic_id)     $query->where('pic_id', $request->pic_id);
+
+    return response()->json($query->get());
+}
 
     public function store(Request $request) {
         $request->validate([
@@ -65,17 +77,17 @@ $query = Document::with(['project','pic','atasan','asisten'])
             return response()->json($document->load(['project','pic','atasan','asisten']));
         }
 
-        // PIC input return actual date
-        if ($request->has('return_actual_date')) {
-            $document->return_actual_date = $request->return_actual_date;
-            $document->status             = 'selesai';
-            $document->submit_status      = 'selesai';
-            if ($request->hasFile('file')) {
-                $document->file_path = $request->file('file')->store('documents','public');
-            }
-            $document->save();
-            return response()->json($document->load(['project','pic','atasan','asisten']));
-        }
+// PIC input return actual date
+if ($request->has('return_actual_date')) {
+    $document->return_actual_date = $request->return_actual_date;
+    $document->status             = 'selesai';
+    $document->submit_status      = 'selesai';
+    if ($request->hasFile('file')) {
+        $document->file_path = $request->file('file')->store('documents','public');
+    }
+    $document->save();
+    return response()->json($document->load(['project','pic','atasan','asisten']));
+}
 
         // Update umum
         $document->update($request->only([

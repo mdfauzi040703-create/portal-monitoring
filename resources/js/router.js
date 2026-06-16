@@ -5,17 +5,18 @@ const routes = [
   { path: '/login', component: () => import('./views/Login.vue'), meta: { guest: true } },
 
   // ASISTEN MANAGER
-  {
-    path: '/asisten',
-    component: () => import('./views/layouts/AsistenLayout.vue'),
-    meta: { requiresAuth: true, role: 'asisten_manager' },
-    children: [
-      { path: '',              component: () => import('./views/asisten/Dashboard.vue') },
-      { path: 'input-proyek', component: () => import('./views/asisten/InputProyek.vue') },
-      { path: 'log',          component: () => import('./views/asisten/LogNotifikasi.vue') },
-      { path: 'users',        component: () => import('./views/asisten/Users.vue') },
-    ]
-  },
+{
+  path: '/asisten',
+  component: () => import('./views/layouts/AsistenLayout.vue'),
+  meta: { requiresAuth: true, role: 'asisten_manager' },
+  children: [
+    { path: '',              component: () => import('./views/asisten/Dashboard.vue') },
+    { path: 'input-proyek', component: () => import('./views/asisten/InputProyek.vue') },
+    { path: 'dokumen',      component: () => import('./views/asisten/Dokumen.vue') },
+    { path: 'log',          component: () => import('./views/asisten/LogNotifikasi.vue') },
+    { path: 'users',        component: () => import('./views/asisten/Users.vue') },
+  ]
+},
 
   // MANAGER
   {

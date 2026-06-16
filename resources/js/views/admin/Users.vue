@@ -56,12 +56,69 @@
   {{ roleLabel(u.role) }}
 </span>
             </td>
-            <td class="px-4 py-3">
-              <button @click="deleteUser(u.id)"
-                class="text-xs text-red-500 hover:text-red-700 hover:underline transition">
-                Hapus
-              </button>
-            </td>
+<td class="px-4 py-3">
+  <div class="flex items-center gap-2">
+    <button @click="openEdit(u)"
+      class="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 hover:bg-blue-50 px-2.5 py-1.5 rounded-lg transition border border-transparent hover:border-blue-100">
+      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+      </svg>
+      Edit
+    </button>
+    <!-- Modal edit user -->
+<div v-if="showEditModal" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+  <div class="bg-white rounded-2xl p-6 w-80 border border-gray-200 shadow-xl">
+    <div class="text-base font-semibold mb-4">Edit User</div>
+
+    <div v-if="editErrorMsg" class="bg-red-50 border border-red-200 text-red-600 text-xs px-3 py-2 rounded-lg mb-3">
+      {{ editErrorMsg }}
+    </div>
+
+    <div class="space-y-3">
+      <div>
+        <label class="block text-xs text-gray-500 mb-1">Nama <span class="text-red-400">*</span></label>
+        <input v-model="editForm.name" type="text"
+          class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"/>
+      </div>
+      <div>
+        <label class="block text-xs text-gray-500 mb-1">WhatsApp</label>
+        <input v-model="editForm.whatsapp" type="text" placeholder="628xxxxxxxxxx"
+          class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"/>
+      </div>
+      <div>
+        <label class="block text-xs text-gray-500 mb-1">Email</label>
+        <input :value="editForm.email" type="email" disabled
+          class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-gray-50 text-gray-400"/>
+        <p class="text-xs text-gray-400 mt-1">Email tidak bisa diubah</p>
+      </div>
+    </div>
+
+    <div class="flex gap-2 justify-end mt-5">
+      <button @click="showEditModal = false"
+        class="text-sm px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition">
+        Batal
+      </button>
+      <button @click="submitEdit" :disabled="editLoading"
+        class="text-sm px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-700 transition disabled:opacity-50 flex items-center gap-2">
+        <svg v-if="editLoading" class="animate-spin w-3.5 h-3.5" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+        </svg>
+        {{ editLoading ? 'Menyimpan...' : 'Simpan' }}
+      </button>
+    </div>
+  </div>
+</div>
+    <!-- Modal konfirmasi hapus -->
+    <button @click="deleteUser(u.id)"
+      class="inline-flex items-center gap-1 text-xs text-red-500 hover:text-red-700 hover:bg-red-50 px-2.5 py-1.5 rounded-lg transition border border-transparent hover:border-red-100">
+      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+      </svg>
+      Hapus
+    </button>
+  </div>
+</td>
           </tr>
           <tr v-if="users.length === 0">
             <td colspan="6" class="px-4 py-8 text-center text-gray-400 text-sm">Belum ada user</td>
@@ -166,6 +223,10 @@ const errorMsg     = ref('')
 const successMsg   = ref('')
 const errors       = ref({})
 const form         = ref({ name: '', email: '', whatsapp: '', password: '', role: 'pic' })
+const showEditModal = ref(false)
+const editLoading   = ref(false)
+const editErrorMsg  = ref('')
+const editForm      = ref({ id: null, name: '', whatsapp: '', email: '' })
 
 function initials(name) {
   if (!name) return '?'
@@ -258,6 +319,32 @@ function roleLabel(role) {
     asisten_manager: 'Asisten Manager',
     pic:             'PIC',
   }[role] || role
+}
+
+function openEdit(u) {
+  editForm.value = { id: u.id, name: u.name, whatsapp: u.whatsapp || '', email: u.email }
+  editErrorMsg.value = ''
+  showEditModal.value = true
+}
+
+async function submitEdit() {
+  editErrorMsg.value = ''
+  if (!editForm.value.name) { editErrorMsg.value = 'Nama wajib diisi'; return }
+
+  editLoading.value = true
+  try {
+    await api.put(`/users/${editForm.value.id}`, {
+      name: editForm.value.name,
+      whatsapp: editForm.value.whatsapp,
+    })
+    showEditModal.value = false
+    showToast('User berhasil diperbarui!')
+    load()
+  } catch (e) {
+    editErrorMsg.value = e.response?.data?.message || 'Gagal menyimpan'
+  } finally {
+    editLoading.value = false
+  }
 }
 
 onMounted(load)

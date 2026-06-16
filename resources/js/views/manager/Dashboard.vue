@@ -26,6 +26,20 @@
       <svg class="w-5 h-5 text-amber-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
       </svg>
+      <div v-if="recentlyDone.length > 0"
+  class="bg-green-50 border border-green-200 rounded-xl p-4 mb-5 flex items-center gap-3">
+  <svg class="w-5 h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+  </svg>
+  <div>
+    <div class="text-sm font-medium text-green-700">{{ recentlyDone.length }} dokumen baru selesai dikirim PIC</div>
+    <div class="text-xs text-green-600 mt-0.5">Cek di menu Semua Dokumen untuk lihat file yang dikirim.</div>
+  </div>
+  <router-link to="/manager/dokumen"
+    class="ml-auto text-xs bg-green-600 text-white px-3 py-1.5 rounded-lg hover:bg-green-700 transition whitespace-nowrap">
+    Lihat sekarang →
+  </router-link>
+</div>
       <div>
         <div class="text-sm font-medium text-amber-700">{{ summary.waiting }} proyek menunggu di-assign ke PIC</div>
         <div class="text-xs text-amber-600 mt-0.5">Segera buka menu Proyek Masuk untuk assign.</div>
@@ -68,7 +82,9 @@
 
       <!-- Per project -->
       <div class="col-span-2 bg-white border border-gray-200 rounded-xl p-4">
-        <div class="text-sm font-medium mb-4">Per Project</div>
+        <div class="flex items-center justify-between mb-4">
+  <div class="text-sm font-medium">Per Project</div>
+</div>
         <div v-if="projects.length === 0"
           class="flex flex-col items-center justify-center py-8 border border-dashed border-gray-200 rounded-xl text-gray-400">
           <svg class="w-8 h-8 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 7h18M3 12h18M3 17h18"/></svg>
@@ -91,74 +107,16 @@
         </div>
       </div>
     </div>
-
-    <!-- Tabel proyek berjalan -->
-    <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
-      <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-        <div class="text-sm font-medium">Semua Proyek Berjalan</div>
-        <select v-model="filterStatus" class="text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white focus:outline-none">
-          <option value="">Semua</option>
-          <option value="pending">Pending</option>
-          <option value="early_warning">Early Warning</option>
-          <option value="alert">Alert</option>
-          <option value="selesai">Selesai</option>
-        </select>
-      </div>
-      <div v-if="loadingTable" class="flex items-center justify-center py-10">
-        <svg class="animate-spin w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24">
-          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
-          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
-        </svg>
-      </div>
-      <table v-else class="w-full text-sm">
-        <thead>
-          <tr class="border-b border-gray-100 bg-gray-50">
-            <th class="text-left px-4 py-3 text-xs text-gray-500 font-medium">#</th>
-            <th class="text-left px-4 py-3 text-xs text-gray-500 font-medium">Nomor Dokumen</th>
-            <th class="text-left px-4 py-3 text-xs text-gray-500 font-medium">Project</th>
-            <th class="text-left px-4 py-3 text-xs text-gray-500 font-medium">Dari Asisten</th>
-            <th class="text-left px-4 py-3 text-xs text-gray-500 font-medium">PIC</th>
-            <th class="text-left px-4 py-3 text-xs text-gray-500 font-medium">Deadline</th>
-            <th class="text-left px-4 py-3 text-xs text-gray-500 font-medium">Return Actual</th>
-            <th class="text-left px-4 py-3 text-xs text-gray-500 font-medium">Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="(doc, i) in filteredDocs" :key="doc.id"
-            :class="doc.status === 'alert' ? 'bg-red-50/20' : doc.status === 'early_warning' ? 'bg-amber-50/20' : ''"
-            class="border-b border-gray-50 hover:bg-gray-50 transition">
-            <td class="px-4 py-3 text-gray-400 text-xs">{{ String(i+1).padStart(3,'0') }}</td>
-            <td class="px-4 py-3 font-medium text-xs">{{ doc.nomor_dokumen }}</td>
-            <td class="px-4 py-3">
-              <span class="bg-blue-50 text-blue-700 text-xs px-2 py-0.5 rounded-full border border-blue-100">
-                {{ doc.project?.name }}
-              </span>
-            </td>
-            <td class="px-4 py-3 text-xs text-gray-500">{{ doc.asisten?.name || '—' }}</td>
-            <td class="px-4 py-3">
-              <div v-if="doc.pic" class="flex items-center gap-1.5">
-                <div class="w-5 h-5 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-semibold">
-                  {{ initials(doc.pic?.name) }}
-                </div>
-                <span class="text-xs">{{ doc.pic?.name }}</span>
-              </div>
-              <span v-else class="text-xs text-gray-300">Belum assign</span>
-            </td>
-            <td class="px-4 py-3 text-xs font-medium" :class="deadlineColor(doc)">
-              {{ doc.review_deadline ? formatDate(doc.review_deadline) : '—' }}
-            </td>
-            <td class="px-4 py-3 text-xs" :class="doc.return_actual_date ? 'text-green-600 font-medium' : 'text-gray-300'">
-              {{ doc.return_actual_date ? formatDate(doc.return_actual_date) : '—' }}
-            </td>
-            <td class="px-4 py-3"><StatusBadge :status="doc.status" /></td>
-          </tr>
-          <tr v-if="filteredDocs.length === 0">
-            <td colspan="8" class="px-4 py-10 text-center text-gray-400 text-sm">Tidak ada proyek</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
+    <div class="bg-white border border-gray-200 rounded-xl p-5 flex items-center justify-between">
+  <div>
+    <div class="text-sm font-medium">Lihat semua proyek yang sedang berjalan</div>
+    <div class="text-xs text-gray-400 mt-0.5">Detail lengkap, filter status, dan riwayat lengkap tersedia di Semua Dokumen</div>
+  </div>
+  <router-link to="/manager/dokumen"
+    class="text-xs bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition whitespace-nowrap">
+    Buka Semua Dokumen →
+  </router-link>
+</div>
     <!-- Modal detail project -->
     <div v-if="showDetail" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
       <div class="bg-white rounded-2xl border border-gray-200 shadow-xl w-full max-w-2xl max-h-[85vh] flex flex-col">
@@ -295,6 +253,14 @@ const summary = computed(() => ({
   done:    docs.value.filter(d => d.submit_status === 'selesai').length,
   alert:   docs.value.filter(d => d.status === 'alert').length,
 }))
+
+const recentlyDone = computed(() => {
+  const yesterday = new Date()
+  yesterday.setDate(yesterday.getDate() - 1)
+  return docs.value.filter(d =>
+    d.return_actual_date && new Date(d.return_actual_date) >= yesterday
+  )
+})
 
 const filteredDocs = computed(() => {
   if (!filterStatus.value) return docs.value
