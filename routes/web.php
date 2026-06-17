@@ -17,3 +17,11 @@ Route::get('/cron/notify-warnings/{secret}', function ($secret) {
 Route::get('/{any}', function () {
     return view('welcome');
 })->where('any', '.*');
+
+Route::get('/check-migrations', function () {
+    $migrations = \Illuminate\Support\Facades\DB::table('migrations')
+        ->orderBy('id', 'desc')
+        ->limit(10)
+        ->pluck('migration');
+    return '<pre>' . implode("\n", $migrations->toArray()) . '</pre>';
+});
