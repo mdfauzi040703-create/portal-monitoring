@@ -390,8 +390,10 @@ async function confirmSend() {
     showSendModal.value = false
     showToastMsg(`Proyek berhasil dikirim ke Asisten Manager!`)
     loadMyDocs()
-  } catch {
-    showToastMsg('Gagal mengirim ke Asisten Manager', 'error')
+  } catch (e) {
+    console.error(e)
+    const msg = e.response?.data?.message || JSON.stringify(e.response?.data?.errors) || e.message
+    showToastMsg('Gagal: ' + msg, 'error')
   } finally {
     submittingId.value = null
   }
