@@ -10,16 +10,9 @@ public function index(Request $request) {
     $query = Document::with(['project','pic','atasan','asisten'])
         ->orderBy('created_at','desc');
 
-    // Isolasi data per Manager: hanya lihat dokumen yang dia assign sendiri
     $user = $request->user();
     if ($user && $user->role === 'manager') {
-        $query->where(function($q) use ($user) {
-            $q->where('atasan_id', $user->id)
-              ->orWhere(function($q2) {
-                  // Tetap bisa lihat dokumen yang belum diassign siapapun (submitted, belum di-assign)
-                  $q2->whereNull('atasan_id')->where('submit_status', 'submitted');
-              });
-        });
+        $query->where('asisten_id', $user->id);
     }
 
     if ($request->status)     $query->where('status', $request->status);
@@ -33,74 +26,70 @@ public function index(Request $request) {
     return response()->json($query->get());
 }
 
-    public function store(Request $request) {
-        $request->validate([
-            'nomor_dokumen' => 'required|string',
-            'project_id'    => 'required|exists:projects,id',
-        ]);
+public function store(Request $request) {
+    $request->validate([
+        'nomor_dokumen' => 'required|string',
+        'project_id'    => 'required|exists:projects,id',
+    ]);
 
-        $data = $request->only(['nomor_dokumen','project_id','catatan','tanggal_masuk']);
-        $data['asisten_id']    = $request->user()->id;
-        $data['submit_status'] = 'draft';
-        $data['status']        = 'pending';
-        $data['tanggal_masuk'] = $data['tanggal_masuk'] ?? now()->format('Y-m-d');
+    $data = $request->only(['nomor_dokumen','project_id','catatan','tanggal_masuk','review_deadline']);
+    $data['asisten_id']    = $request->user()->id; // sekarang diisi Manager
+    $data['submit_status'] = 'draft';
+    $data['status']        = 'pending';
+    $data['tanggal_masuk'] = $data['tanggal_masuk'] ?? now()->format('Y-m-d');
 
-        if ($request->hasFile('file')) {
-            $data['file_path'] = $request->file('file')->store('documents','public');
-        }
-
-        $doc = Document::create($data);
-        return response()->json($doc->load(['project','pic','atasan','asisten']), 201);
-    }
-
-    public function update(Request $request, Document $document) {
-        // Asisten submit ke manager
-        if ($request->has('submit_to_manager')) {
-            $document->submit_status = 'submitted';
-            $document->save();
-            return response()->json($document->load(['project','pic','atasan','asisten']));
-        }
-
-        // Manager assign ke PIC
-        if ($request->has('assign_to_pic')) {
-            $request->validate([
-                'pic_id'          => 'required|exists:users,id',
-                'review_deadline' => 'required|date',
-            ]);
-            $document->pic_id          = $request->pic_id;
-            $document->atasan_id       = $request->user()->id;
-            $document->review_deadline = $request->review_deadline;
-            $document->tanggal_masuk   = $request->tanggal_masuk ?? now()->format('Y-m-d');
-            $document->submit_status   = 'assigned';
-            $document->updateStatus();
-            $document->save();
-            return response()->json($document->load(['project','pic','atasan','asisten']));
-        }
-
-// PIC input return actual date
-if ($request->has('return_actual_date')) {
-    $document->return_actual_date = $request->return_actual_date;
-    $document->status             = 'selesai';
-    $document->submit_status      = 'selesai';
     if ($request->hasFile('file')) {
-        $document->file_path = $request->file('file')->store('documents','public');
+        $data['file_path'] = $request->file('file')->store('documents','public');
     }
-    $document->save();
-    return response()->json($document->load(['project','pic','atasan','asisten']));
+
+    $doc = Document::create($data);
+    return response()->json($doc->load(['project','pic','atasan','asisten']), 201);
 }
 
-        // Update umum
-        $document->update($request->only([
-            'nomor_dokumen','project_id','tanggal_masuk','review_deadline','catatan'
-        ]));
-        if ($request->hasFile('file')) {
-            $document->file_path = $request->file('file')->store('documents','public');
-            $document->save();
-        }
+public function update(Request $request, Document $document) {
+    // Manager submit ke Asisten Manager
+    if ($request->has('submit_to_manager')) {
+        $document->submit_status = 'submitted';
+        $document->save();
+        return response()->json($document->load(['project','pic','atasan','asisten']));
+    }
+
+    // Asisten Manager assign ke PIC
+    if ($request->has('assign_to_pic')) {
+        $request->validate([
+            'pic_id' => 'required|exists:users,id',
+        ]);
+        $document->pic_id        = $request->pic_id;
+        $document->atasan_id     = $request->user()->id; // sekarang diisi Asisten Manager
+        $document->submit_status = 'assigned';
         $document->updateStatus();
         $document->save();
         return response()->json($document->load(['project','pic','atasan','asisten']));
     }
+  // PIC input return actual date
+    if ($request->has('return_actual_date')) {
+        $document->return_actual_date = $request->return_actual_date;
+        $document->status             = 'selesai';
+        $document->submit_status      = 'selesai';
+        if ($request->hasFile('file')) {
+            $document->file_path = $request->file('file')->store('documents','public');
+        }
+        $document->save();
+        return response()->json($document->load(['project','pic','atasan','asisten']));
+    }
+
+    // Update umum
+    $document->update($request->only([
+        'nomor_dokumen','project_id','tanggal_masuk','review_deadline','catatan'
+    ]));
+    if ($request->hasFile('file')) {
+        $document->file_path = $request->file('file')->store('documents','public');
+        $document->save();
+    }
+    $document->updateStatus();
+    $document->save();
+    return response()->json($document->load(['project','pic','atasan','asisten']));
+}
 
     public function destroy(Document $document) {
         $document->delete();

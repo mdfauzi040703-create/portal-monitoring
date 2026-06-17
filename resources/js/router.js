@@ -3,34 +3,33 @@ import { useAuthStore } from './stores/auth'
 
 const routes = [
   { path: '/login', component: () => import('./views/Login.vue'), meta: { guest: true } },
+// MANAGER
+{
+  path: '/manager',
+  component: () => import('./views/layouts/ManagerLayout.vue'),
+  meta: { requiresAuth: true, role: 'manager' },
+  children: [
+    { path: '',              component: () => import('./views/manager/Dashboard.vue') },
+    { path: 'input-proyek', component: () => import('./views/manager/InputProyek.vue') },
+    { path: 'daftar-pic',   component: () => import('./views/manager/DaftarPIC.vue') },
+    { path: 'log',          component: () => import('./views/manager/LogNotifikasi.vue') },
+    { path: 'dokumen',      component: () => import('./views/manager/Dokumen.vue') },
+  ]
+},
 
-  // ASISTEN MANAGER
+// ASISTEN MANAGER
 {
   path: '/asisten',
   component: () => import('./views/layouts/AsistenLayout.vue'),
   meta: { requiresAuth: true, role: 'asisten_manager' },
   children: [
     { path: '',              component: () => import('./views/asisten/Dashboard.vue') },
-    { path: 'input-proyek', component: () => import('./views/asisten/InputProyek.vue') },
+    { path: 'proyek-masuk', component: () => import('./views/asisten/ProyekMasuk.vue') },
     { path: 'dokumen',      component: () => import('./views/asisten/Dokumen.vue') },
     { path: 'log',          component: () => import('./views/asisten/LogNotifikasi.vue') },
     { path: 'users',        component: () => import('./views/asisten/Users.vue') },
   ]
 },
-
-  // MANAGER
-  {
-    path: '/manager',
-    component: () => import('./views/layouts/ManagerLayout.vue'),
-    meta: { requiresAuth: true, role: 'manager' },
-    children: [
-      { path: '',             component: () => import('./views/manager/Dashboard.vue') },
-      { path: 'proyek-masuk', component: () => import('./views/manager/ProyekMasuk.vue') },
-      { path: 'daftar-pic',   component: () => import('./views/manager/DaftarPIC.vue') },
-      { path: 'log',          component: () => import('./views/manager/LogNotifikasi.vue') },
-      { path: 'dokumen',      component: () => import('./views/manager/Dokumen.vue') },
-    ]
-  },
 
   // ADMIN
   {
