@@ -7,7 +7,11 @@ Route::get('/cron/notify-warnings/{secret}', function ($secret) {
     }
     \Illuminate\Support\Facades\Artisan::call('notify:warnings');
     $output = \Illuminate\Support\Facades\Artisan::output();
-    return '<pre>' . $output . '</pre>';
+
+    // Hitung ringkasan saja, jangan kirim full log ke response
+    $sentCount = substr_count($output, 'terkirim ke');
+
+    return "OK. {$sentCount} notifikasi diproses pada " . now()->format('d M Y H:i');
 });
 
 Route::get('/{any}', function () {
