@@ -7,12 +7,18 @@ use Illuminate\Http\Request;
 
 class DocumentController extends Controller {
 public function index(Request $request) {
-    $query = Document::with(['project','pic','atasan','asisten'])
+    $query = Document::with(['project','pic','atasan','asisten','targetAsisten'])
         ->orderBy('created_at','desc');
 
     $user = $request->user();
     if ($user && $user->role === 'manager') {
         $query->where('asisten_id', $user->id);
+    }
+    if ($user && $user->role === 'asisten_manager') {
+        $query->where(function($q) use ($user) {
+            $q->where('target_asisten_id', $user->id)
+              ->orWhereNull('target_asisten_id'); // fallback untuk data lama
+        });
     }
 
     if ($request->status)     $query->where('status', $request->status);
@@ -47,12 +53,16 @@ public function store(Request $request) {
 }
 
 public function update(Request $request, Document $document) {
-    // Manager submit ke Asisten Manager
-    if ($request->has('submit_to_manager')) {
-        $document->submit_status = 'submitted';
-        $document->save();
-        return response()->json($document->load(['project','pic','atasan','asisten']));
-    }
+// Manager submit ke Asisten Manager yang dipilih
+if ($request->has('submit_to_manager')) {
+    $request->validate([
+        'target_asisten_id' => 'required|exists:users,id',
+    ]);
+    $document->target_asisten_id = $request->target_asisten_id;
+    $document->submit_status     = 'submitted';
+    $document->save();
+    return response()->json($document->load(['project','pic','atasan','asisten','targetAsisten']));
+}
 
     // Asisten Manager assign ke PIC
     if ($request->has('assign_to_pic')) {

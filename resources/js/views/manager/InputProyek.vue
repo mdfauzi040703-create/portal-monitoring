@@ -150,16 +150,14 @@
                 </span>
                 <StatusBadge v-if="doc.pic_id" :status="doc.status" />
 
-                <button v-if="doc.submit_status === 'draft'"
-                  @click="submitToAsisten(doc)"
-                  :disabled="submittingId === doc.id"
-                  class="text-xs bg-amber-500 text-white px-3 py-1.5 rounded-lg hover:bg-amber-600 transition disabled:opacity-50 flex items-center gap-1 whitespace-nowrap">
-                  <svg v-if="submittingId === doc.id" class="animate-spin w-3 h-3" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
-                  </svg>
-                  {{ submittingId === doc.id ? 'Mengirim...' : 'Kirim ke Asisten' }}
-                </button>
+<button v-if="doc.submit_status === 'draft'"
+  @click="openSendModal(doc)"
+  class="text-xs bg-amber-500 text-white px-3 py-1.5 rounded-lg hover:bg-amber-600 transition flex items-center gap-1 whitespace-nowrap">
+  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+  </svg>
+  Kirim ke Asisten
+</button>
 
                 <button v-if="doc.submit_status === 'draft'"
                   @click="deleteDoc(doc.id)"
@@ -172,6 +170,33 @@
         </div>
       </div>
     </div>
+
+    <!-- Modal pilih asisten -->
+<div v-if="showSendModal" class="fixed inset-0 bg-black/40 flex items-center justify-center z-[999]">
+  <div class="bg-white rounded-2xl p-6 w-80 border border-gray-200 shadow-xl">
+    <div class="text-base font-semibold mb-1">Kirim ke Asisten Manager</div>
+    <div class="text-xs text-gray-500 mb-4">{{ selectedDocToSend?.nomor_dokumen }}</div>
+
+    <label class="block text-xs text-gray-500 mb-1">Pilih Asisten Manager <span class="text-red-400">*</span></label>
+    <select v-model="targetAsistenId"
+      class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400">
+      <option value="">Pilih Asisten Manager</option>
+      <option v-for="a in asistenList" :key="a.id" :value="a.id">{{ a.name }}</option>
+    </select>
+
+    <div class="flex gap-2 justify-end mt-5">
+      <button @click="showSendModal = false" class="text-sm px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50">Batal</button>
+      <button @click="confirmSend" :disabled="submittingId === selectedDocToSend?.id"
+        class="text-sm px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 disabled:opacity-50 flex items-center gap-2">
+        <svg v-if="submittingId === selectedDocToSend?.id" class="animate-spin w-3.5 h-3.5" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+        </svg>
+        {{ submittingId === selectedDocToSend?.id ? 'Mengirim...' : 'Kirim' }}
+      </button>
+    </div>
+  </div>
+</div>
 
     <!-- Confirm hapus -->
     <div v-if="showConfirm" class="fixed inset-0 bg-black/40 flex items-center justify-center z-[999]">
@@ -225,6 +250,10 @@ const selectedFile   = ref(null)
 const isDragging     = ref(false)
 const uploadProgress = ref(0)
 const fileInput      = ref(null)
+const showSendModal     = ref(false)
+const selectedDocToSend = ref(null)
+const targetAsistenId   = ref('')
+const asistenList       = ref([])
 
 const form = ref({ nomor_dokumen: '', project_id: '', tanggal_masuk: '', review_deadline: '', catatan: '' })
 
@@ -341,9 +370,37 @@ async function loadMyDocs() {
   myDocs.value = res.data.filter(d => d.asisten_id === auth.user?.id)
 }
 
+function openSendModal(doc) {
+  selectedDocToSend.value = doc
+  targetAsistenId.value   = ''
+  showSendModal.value     = true
+}
+
+async function confirmSend() {
+  if (!targetAsistenId.value) {
+    showToastMsg('Pilih Asisten Manager tujuan!')
+    return
+  }
+  submittingId.value = selectedDocToSend.value.id
+  try {
+    await api.put(`/documents/${selectedDocToSend.value.id}`, {
+      submit_to_manager: true,
+      target_asisten_id: targetAsistenId.value,
+    })
+    showSendModal.value = false
+    showToastMsg(`Proyek berhasil dikirim ke Asisten Manager!`)
+    loadMyDocs()
+  } catch {
+    showToastMsg('Gagal mengirim ke Asisten Manager', 'error')
+  } finally {
+    submittingId.value = null
+  }
+}
+
 onMounted(async () => {
-  const res = await api.get('/projects')
-  projects.value = res.data
+  const [pRes, uRes] = await Promise.all([api.get('/projects'), api.get('/users')])
+  projects.value    = pRes.data
+  asistenList.value = uRes.data.filter(u => u.role === 'asisten_manager')
   loadMyDocs()
 })
 </script>

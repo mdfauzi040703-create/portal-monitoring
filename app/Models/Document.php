@@ -7,11 +7,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 class Document extends Model {
     use HasFactory;
 
-    protected $fillable = [
-        'nomor_dokumen','project_id','atasan_id','asisten_id','pic_id',
-        'tanggal_masuk','review_deadline','return_actual_date',
-        'status','submit_status','catatan','file_path'
-    ];
+protected $fillable = [
+    'nomor_dokumen','project_id','atasan_id','asisten_id','target_asisten_id','pic_id',
+    'tanggal_masuk','review_deadline','return_actual_date',
+    'status','submit_status','catatan','file_path'
+];
 
     protected $casts = [
         'tanggal_masuk'      => 'date',
@@ -51,4 +51,7 @@ class Document extends Model {
         elseif ($diff <= 0) $this->status = 'alert';
         else                $this->status = 'pending';
     }
+    public function targetAsisten() {
+    return $this->belongsTo(User::class, 'target_asisten_id');
+}
 }
