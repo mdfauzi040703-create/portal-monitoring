@@ -19,9 +19,12 @@ class SendWarningNotifications extends Command {
             ->whereNull('return_actual_date')
             ->get();
 
-        foreach ($documents as $doc) {
-            $deadline = Carbon::parse($doc->review_deadline)->startOfDay();
-            $diff = (int) round($today->diffInDays($deadline, false));
+foreach ($documents as $doc) {
+    // Skip dokumen yang belum punya deadline atau belum di-assign ke PIC
+    if (!$doc->review_deadline || !$doc->pic_id) continue;
+
+    $deadline = Carbon::parse($doc->review_deadline)->startOfDay();
+    $diff = (int) round($today->diffInDays($deadline, false));
 
             // diff: +1 = H-1, 0 = hari H, -1 = H+1
             if (!in_array($diff, [1, 0, -1])) continue;
@@ -41,11 +44,11 @@ class SendWarningNotifications extends Command {
 
             if ($alreadySent) continue;
 
-            $message = "[{$label}] Reminder Dokumen\n"
-                . "Nomor   : {$doc->nomor_dokumen}\n"
-                . "Project : {$doc->project->name}\n"
-                . "Deadline: {$doc->review_deadline->format('d M Y')}\n"
-                . "Mohon segera input Return Actual Date.";
+$message = "[{$label}] Reminder Dokumen\n"
+    . "Nomor   : {$doc->nomor_dokumen}\n"
+    . "Project : {$doc->project->name}\n"
+    . "Deadline: {$doc->review_deadline->format('d M Y')}\n"
+    . "Mohon segera input Return Actual Date.";
 
             $emailSent = false;
             $waSent    = false;
