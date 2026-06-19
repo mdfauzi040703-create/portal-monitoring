@@ -14,3 +14,12 @@ Route::get('/cron/notify-warnings/{secret}', function ($secret) {
 Route::get('/{any}', function () {
     return view('welcome');
 })->where('any', '.*');
+
+Route::get('/check-storage', function () {
+    $linkPath = public_path('storage');
+    $isLink   = is_link($linkPath);
+    $exists   = file_exists($linkPath);
+    $target   = $isLink ? readlink($linkPath) : 'BUKAN SYMLINK';
+
+    return "Path: {$linkPath}<br>Is Link: " . ($isLink ? 'YA' : 'TIDAK') . "<br>Exists: " . ($exists ? 'YA' : 'TIDAK') . "<br>Target: {$target}";
+});
