@@ -86,7 +86,7 @@
               {{ doc.return_actual_date ? formatDate(doc.return_actual_date) : '—' }}
             </td>
             <td class="px-4 py-3">
-              <a v-if="doc.file_path" :href="'http://localhost:8000/storage/' + doc.file_path" target="_blank"
+              <a v-if="doc.file_path" :href="'/storage/' + doc.file_path" target="_blank"
                 class="text-xs text-blue-600 hover:underline">Lihat</a>
               <span v-else class="text-xs text-gray-300">—</span>
             </td>

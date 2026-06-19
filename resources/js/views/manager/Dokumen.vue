@@ -58,12 +58,13 @@
             <th class="text-left px-4 py-3 text-xs text-gray-500 font-medium">#</th>
             <th class="text-left px-4 py-3 text-xs text-gray-500 font-medium">Nomor Dokumen</th>
             <th class="text-left px-4 py-3 text-xs text-gray-500 font-medium">Project</th>
-            <th class="text-left px-4 py-3 text-xs text-gray-500 font-medium">Dari Asisten</th>
+            <th class="text-left px-4 py-3 text-xs text-gray-500 font-medium">Dari Manager</th>
             <th class="text-left px-4 py-3 text-xs text-gray-500 font-medium">PIC</th>
             <th class="text-left px-4 py-3 text-xs text-gray-500 font-medium">Deadline</th>
             <th class="text-left px-4 py-3 text-xs text-gray-500 font-medium">Return Actual</th>
             <th class="text-left px-4 py-3 text-xs text-gray-500 font-medium">File</th>
             <th class="text-left px-4 py-3 text-xs text-gray-500 font-medium">Status</th>
+            <th class="text-left px-4 py-3 text-xs text-gray-500 font-medium">Aksi</th>
           </tr>
         </thead>
         <tbody>
@@ -94,11 +95,18 @@
               {{ doc.return_actual_date ? formatDate(doc.return_actual_date) : '—' }}
             </td>
             <td class="px-4 py-3">
-              <a v-if="doc.file_path" :href="'http://localhost:8000/storage/' + doc.file_path" target="_blank"
+              <a v-if="doc.file_path" :href="'/storage/' + doc.file_path" target="_blank"
                 class="text-xs text-blue-600 hover:underline">Lihat</a>
               <span v-else class="text-xs text-gray-300">—</span>
             </td>
             <td class="px-4 py-3"><StatusBadge :status="doc.status" /></td>
+            <td class="px-4 py-3">
+  <button v-if="doc.status !== 'selesai'" @click="deleteDoc(doc.id)"
+    class="text-xs text-red-500 hover:text-red-700 hover:underline transition">
+    Hapus
+  </button>
+  <span v-else class="text-xs text-gray-300">—</span>
+</td>
           </tr>
           <tr v-if="filtered.length === 0">
             <td colspan="9" class="px-4 py-10 text-center text-gray-400 text-sm">Tidak ada dokumen</td>
@@ -107,6 +115,27 @@
       </table>
     </div>
   </div>
+
+  <!-- Modal konfirmasi hapus -->
+<div v-if="showConfirm" class="fixed inset-0 bg-black/40 flex items-center justify-center z-[999]">
+  <div class="bg-white rounded-2xl p-6 w-80 border border-gray-200 shadow-xl">
+    <div class="flex items-center gap-3 mb-4">
+      <div class="w-10 h-10 rounded-full bg-red-100 text-red-600 flex items-center justify-center flex-shrink-0">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+        </svg>
+      </div>
+      <div>
+        <div class="text-sm font-semibold">Hapus Dokumen</div>
+        <div class="text-xs text-gray-500 mt-0.5">Dokumen yang dihapus tidak bisa dikembalikan.</div>
+      </div>
+    </div>
+    <div class="flex gap-2 justify-end">
+      <button @click="showConfirm = false" class="text-sm px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50">Batal</button>
+      <button @click="confirmDelete" class="text-sm px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">Ya, Hapus</button>
+    </div>
+  </div>
+</div>
 </template>
 
 <script setup>
@@ -118,6 +147,8 @@ const docs     = ref([])
 const projects = ref([])
 const loading  = ref(false)
 const filter   = ref({ status: '', project_id: '', search: '' })
+const showConfirm = ref(false)
+const deleteId     = ref(null)
 
 const filtered = computed(() => {
   return docs.value.filter(d => {
@@ -149,6 +180,23 @@ function deadlineColor(doc) {
   if (doc.status === 'alert')         return 'text-red-600'
   if (doc.status === 'early_warning') return 'text-amber-600'
   return 'text-gray-700'
+}
+
+function deleteDoc(id) {
+  deleteId.value    = id
+  showConfirm.value = true
+}
+
+async function confirmDelete() {
+  showConfirm.value = false
+  try {
+    await api.delete(`/documents/${deleteId.value}`)
+    const [dRes, pRes] = await Promise.all([api.get('/documents'), api.get('/projects')])
+    docs.value     = dRes.data
+    projects.value = pRes.data
+  } catch {
+    alert('Gagal menghapus dokumen')
+  }
 }
 
 onMounted(async () => {

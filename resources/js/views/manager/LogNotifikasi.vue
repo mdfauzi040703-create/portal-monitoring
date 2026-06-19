@@ -2,6 +2,34 @@
   <div>
     <div class="text-base font-semibold mb-4">Log Notifikasi</div>
 
+    <!-- Dokumen baru selesai dari PIC -->
+    <div v-if="recentlyDone.length > 0" class="mb-5">
+      <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">File Diterima dari PIC</div>
+      <div class="space-y-2">
+        <div v-for="doc in recentlyDone" :key="doc.id"
+          class="flex items-start gap-3 p-3 rounded-xl border bg-green-50 border-green-200">
+          <div class="w-8 h-8 rounded-full bg-green-100 text-green-700 flex items-center justify-center flex-shrink-0 mt-0.5">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="text-sm font-medium">Dokumen selesai dikerjakan</div>
+            <div class="text-xs text-gray-600 mt-0.5 font-medium">{{ doc.nomor_dokumen }}</div>
+            <div class="text-xs text-gray-500 mt-0.5">
+              PIC: <span class="font-medium text-blue-600">{{ doc.pic?.name }}</span>
+            </div>
+            <a v-if="doc.file_path" :href="'http://localhost:8000/storage/' + doc.file_path" target="_blank"
+              class="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline mt-1">
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+              Lihat file
+            </a>
+          </div>
+          <div class="text-xs text-gray-400 whitespace-nowrap">{{ formatDate(doc.return_actual_date) }}</div>
+        </div>
+      </div>
+    </div>
+
     <div v-if="loading" class="flex items-center justify-center py-16">
       <div class="flex items-center gap-3 text-gray-400">
         <svg class="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
@@ -12,18 +40,18 @@
       </div>
     </div>
 
-    <div v-else-if="logs.length === 0"
+    <div v-else-if="logs.length === 0 && recentlyDone.length === 0"
       class="flex flex-col items-center justify-center py-16 bg-white border border-dashed border-gray-200 rounded-2xl text-gray-400">
       <svg class="w-12 h-12 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
       </svg>
       <div class="text-sm font-medium">Belum ada notifikasi</div>
       <div class="text-xs mt-1 text-center px-8">
-        Notifikasi muncul saat PIC mendekati deadline (H-1, Hari H, H+1)
+        Notifikasi muncul saat PIC mendekati deadline (H-1, Hari H, H+1) atau mengirim file selesai
       </div>
     </div>
 
-    <div v-else class="grid grid-cols-2 gap-4">
+    <div v-else-if="logs.length > 0" class="grid grid-cols-2 gap-4">
       <div>
         <div class="flex items-center gap-2 mb-3">
           <div class="text-xs font-medium text-gray-500 uppercase tracking-wide">Hari ini</div>
@@ -57,11 +85,6 @@
               <div class="text-xs font-medium text-gray-700 mt-0.5">{{ log.document?.nomor_dokumen }}</div>
               <div class="text-xs text-gray-500 mt-0.5">
                 PIC: <span class="font-medium text-blue-600">{{ log.pic?.name }}</span>
-              </div>
-              <div v-if="log.document?.project?.name" class="mt-1">
-                <span class="bg-blue-50 text-blue-700 text-xs px-2 py-0.5 rounded-full border border-blue-100">
-                  {{ log.document?.project?.name }}
-                </span>
               </div>
             </div>
             <div class="text-xs text-gray-400 whitespace-nowrap">{{ formatTime(log.sent_at) }}</div>
@@ -103,11 +126,6 @@
               <div class="text-xs text-gray-500 mt-0.5">
                 PIC: <span class="font-medium text-blue-600">{{ log.pic?.name }}</span>
               </div>
-              <div v-if="log.document?.project?.name" class="mt-1">
-                <span class="bg-blue-50 text-blue-700 text-xs px-2 py-0.5 rounded-full border border-blue-100">
-                  {{ log.document?.project?.name }}
-                </span>
-              </div>
             </div>
             <div class="text-xs text-gray-400 whitespace-nowrap">{{ formatTime(log.sent_at) }}</div>
           </div>
@@ -122,9 +140,10 @@ import { ref, computed, onMounted } from 'vue'
 import api from '../../axios'
 import { useAuthStore } from '../../stores/auth'
 
-const auth    = useAuthStore()
-const logs    = ref([])
-const loading = ref(false)
+const auth         = useAuthStore()
+const logs         = ref([])
+const recentlyDone = ref([])
+const loading      = ref(false)
 
 const today = computed(() => {
   const t = new Date().toDateString()
@@ -135,6 +154,11 @@ const previous = computed(() => {
   const t = new Date().toDateString()
   return logs.value.filter(l => new Date(l.sent_at).toDateString() !== t)
 })
+
+function formatDate(dt) {
+  if (!dt) return '—'
+  return new Date(dt).toLocaleDateString('id-ID', { day:'2-digit', month:'short', year:'numeric' })
+}
 
 function formatTime(dt) {
   return new Date(dt).toLocaleString('id-ID', {
@@ -156,22 +180,21 @@ function iconClass(log) {
 onMounted(async () => {
   loading.value = true
   try {
-    // Ambil dokumen yang diassign oleh manager ini
-    const docRes   = await api.get('/documents')
-    const myDocIds = docRes.data
-      .filter(d => d.atasan_id === auth.user?.id)
-      .map(d => d.id)
+    const docRes = await api.get('/documents')
+    const myDocs = docRes.data.filter(d => d.asisten_id === auth.user?.id)
+    const myDocIds = myDocs.map(d => d.id)
 
-    if (myDocIds.length === 0) {
-      logs.value = []
-      return
-    }
-
-    // Filter log berdasarkan dokumen milik manager
-    const logRes  = await api.get('/notification-logs')
-    logs.value = (logRes.data.data || []).filter(l =>
-      myDocIds.includes(l.document_id)
+    // Dokumen yang baru selesai dalam 7 hari terakhir
+    const weekAgo = new Date()
+    weekAgo.setDate(weekAgo.getDate() - 7)
+    recentlyDone.value = myDocs.filter(d =>
+      d.return_actual_date && new Date(d.return_actual_date) >= weekAgo
     )
+
+    if (myDocIds.length > 0) {
+      const logRes = await api.get('/notification-logs')
+      logs.value = (logRes.data.data || []).filter(l => myDocIds.includes(l.document_id))
+    }
   } finally {
     loading.value = false
   }

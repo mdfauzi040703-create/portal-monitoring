@@ -6,10 +6,9 @@ use App\Models\Project;
 use Illuminate\Http\Request;
 
 class ProjectController extends Controller {
-    public function index() {
-        return response()->json(Project::withCount('documents')->get());
-    }
-
+public function index() {
+    return response()->json(Project::withCount('documents')->get());
+}
     public function store(Request $request) {
         $request->validate([
             'name' => 'required|string|max:100',

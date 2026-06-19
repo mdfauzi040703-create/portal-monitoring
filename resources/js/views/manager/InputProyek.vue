@@ -24,12 +24,18 @@
 
           <div>
             <label class="block text-xs text-gray-500 mb-1">Project <span class="text-red-400">*</span></label>
-            <select v-model="form.project_id"
-              class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
-              :class="{'border-red-300': errors.project_id}">
-              <option value="">Pilih project</option>
-              <option v-for="p in projects" :key="p.id" :value="p.id">{{ p.name }}</option>
-            </select>
+<div class="flex gap-2">
+  <select v-model="form.project_id"
+    class="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+    :class="{'border-red-300': errors.project_id}">
+    <option value="">Pilih project</option>
+    <option v-for="p in projects" :key="p.id" :value="p.id">{{ p.name }}</option>
+  </select>
+  <button @click="showAddProject = true"
+    class="px-3 py-2 border border-gray-200 rounded-lg text-xs hover:bg-gray-50 transition whitespace-nowrap">
+    + Baru
+  </button>
+</div>
             <p v-if="errors.project_id" class="text-xs text-red-500 mt-1">{{ errors.project_id }}</p>
           </div>
 
@@ -128,7 +134,7 @@
                 <div v-if="doc.catatan" class="text-xs text-gray-400 mt-0.5 italic">"{{ doc.catatan }}"</div>
 
                 <div v-if="doc.file_path" class="mt-1">
-                  <a :href="'http://localhost:8000/storage/' + doc.file_path" target="_blank"
+                  <a :href="'/storage/' + doc.file_path" target="_blank"
                     class="flex items-center gap-1 text-xs text-blue-600 hover:underline w-fit">
                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
                     Lihat file
@@ -198,6 +204,19 @@
   </div>
 </div>
 
+<!-- Modal tambah project -->
+<div v-if="showAddProject" class="fixed inset-0 bg-black/40 flex items-center justify-center z-[999]">
+  <div class="bg-white rounded-2xl p-6 w-80 border border-gray-200 shadow-xl">
+    <div class="text-base font-semibold mb-4">Tambah Project Baru</div>
+    <input v-model="newProjectName" type="text" placeholder="Nama project"
+      class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"/>
+    <div class="flex gap-2 justify-end mt-4">
+      <button @click="showAddProject = false" class="text-sm px-4 py-2 border border-gray-200 rounded-lg">Batal</button>
+      <button @click="addProject" class="text-sm px-4 py-2 bg-gray-900 text-white rounded-lg">Tambah</button>
+    </div>
+  </div>
+</div>
+
     <!-- Confirm hapus -->
     <div v-if="showConfirm" class="fixed inset-0 bg-black/40 flex items-center justify-center z-[999]">
       <div class="bg-white rounded-2xl p-6 w-80 border border-gray-200 shadow-xl">
@@ -254,6 +273,8 @@ const showSendModal     = ref(false)
 const selectedDocToSend = ref(null)
 const targetAsistenId   = ref('')
 const asistenList       = ref([])
+const showAddProject = ref(false)
+const newProjectName = ref('')
 
 const form = ref({ nomor_dokumen: '', project_id: '', tanggal_masuk: '', review_deadline: '', catatan: '' })
 
@@ -397,6 +418,16 @@ async function confirmSend() {
   } finally {
     submittingId.value = null
   }
+}
+
+async function addProject() {
+  if (!newProjectName.value) return
+  await api.post('/projects', { name: newProjectName.value })
+  const res = await api.get('/projects')
+  projects.value = res.data
+  newProjectName.value = ''
+  showAddProject.value = false
+  showToastMsg('Project berhasil ditambahkan!')
 }
 
 onMounted(async () => {
