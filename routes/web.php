@@ -33,6 +33,22 @@ Route::get('/make-storage-link', function () {
         return 'ERROR: ' . $e->getMessage();
     }
 });
+
+Route::get('/check-file/{filename}', function ($filename) {
+    $path = storage_path('app/public/documents/' . $filename);
+    $exists = file_exists($path);
+    $size   = $exists ? filesize($path) : 0;
+
+    // List semua file yang ada di folder documents
+    $allFiles = glob(storage_path('app/public/documents/*'));
+
+    return "Cek file: {$filename}<br>"
+        . "Path: {$path}<br>"
+        . "Exists: " . ($exists ? 'YA' : 'TIDAK') . "<br>"
+        . "Size: {$size} bytes<br><br>"
+        . "Total file di folder documents: " . count($allFiles) . "<br>"
+        . "Daftar file:<br>" . implode('<br>', array_map('basename', $allFiles));
+});
 // ============================================
 // CATCH-ALL HARUS SELALU DI PALING BAWAH!
 // ============================================
