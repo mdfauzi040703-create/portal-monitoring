@@ -16,15 +16,15 @@ Route::get('/check-file/{filename}', function ($filename) {
 });
 
 // Serve file storage langsung lewat Laravel (karena pakai php artisan serve, bukan nginx)
-Route::get('/storage/{path}', function ($path) {
-    $fullPath = storage_path('app/public/' . $path);
+Route::get('/storage/{folder}/{filename}', function ($folder, $filename) {
+    $fullPath = storage_path("app/public/{$folder}/{$filename}");
 
     if (!file_exists($fullPath)) {
         abort(404, 'File tidak ditemukan di: ' . $fullPath);
     }
 
     return response()->file($fullPath);
-})->where('path', '.*');
+});
 
 Route::get('/cron/notify-warnings/{secret}', function ($secret) {
     if ($secret !== env('CRON_SECRET', 'ganti-rahasia-ini')) {
