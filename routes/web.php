@@ -24,6 +24,15 @@ Route::get('/cron/notify-warnings/{secret}', function ($secret) {
     return "OK. {$sentCount} notifikasi diproses pada " . now()->format('d M Y H:i');
 });
 
+Route::get('/make-storage-link', function () {
+    try {
+        \Illuminate\Support\Facades\Artisan::call('storage:link');
+        $output = \Illuminate\Support\Facades\Artisan::output();
+        return '<pre>' . $output . '</pre>';
+    } catch (\Exception $e) {
+        return 'ERROR: ' . $e->getMessage();
+    }
+});
 // ============================================
 // CATCH-ALL HARUS SELALU DI PALING BAWAH!
 // ============================================
