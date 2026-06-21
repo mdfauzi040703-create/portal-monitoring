@@ -47,6 +47,15 @@ Route::get('/test-email', function () {
     }
 });
 
+Route::get('/check-logs', function () {
+    $logs = \App\Models\NotificationLog::orderBy('id', 'desc')->take(10)->get();
+    $output = '';
+    foreach ($logs as $log) {
+        $output .= "ID:{$log->id} doc:{$log->document_id} type:{$log->notif_type} status:{$log->status} sent_at:{$log->sent_at}<br>";
+    }
+    return $output ?: 'Tidak ada log sama sekali';
+});
+
 Route::get('/test-deadline', function () {
     $today = \Carbon\Carbon::today();
     $docs  = \App\Models\Document::whereNotNull('pic_id')->whereNull('return_actual_date')->take(3)->get();
