@@ -36,6 +36,18 @@ Route::get('/cron/notify-warnings/{secret}', function ($secret) {
     return "OK. {$sentCount} notifikasi diproses pada " . now()->format('d M Y H:i');
 });
 
+Route::get('/test-email', function () {
+    try {
+        \Illuminate\Support\Facades\Mail::raw('Ini email test dari Portal Monitoring.', function ($mail) {
+            $mail->to(env('MAIL_USERNAME'))
+                 ->subject('Test Email Portal Monitoring');
+        });
+        return 'Email berhasil dikirim! Cek inbox ' . env('MAIL_USERNAME');
+    } catch (\Exception $e) {
+        return 'GAGAL: ' . $e->getMessage();
+    }
+});
+
 Route::get('/{any}', function () {
     return view('welcome');
 })->where('any', '.*');
