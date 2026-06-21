@@ -73,6 +73,11 @@ Route::get('/test-deadline', function () {
     return implode('<br>', $labels);
 });
 
+Route::get('/clear-today-logs', function () {
+    $count = \App\Models\NotificationLog::whereDate('sent_at', \Carbon\Carbon::today())->delete();
+    return "Berhasil hapus {$count} log notifikasi hari ini. Sekarang coba jalankan /cron/notify-warnings lagi.";
+});
+
 Route::get('/{any}', function () {
     return view('welcome');
 })->where('any', '.*');
