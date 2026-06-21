@@ -15,7 +15,6 @@ Route::get('/check-file/{filename}', function ($filename) {
         . "Daftar file:<br>" . implode('<br>', array_map('basename', $allFiles));
 });
 
-// Serve file storage langsung lewat Laravel (karena pakai php artisan serve, bukan nginx)
 Route::get('/storage/{folder}/{filename}', function ($folder, $filename) {
     $fullPath = storage_path("app/public/{$folder}/{$filename}");
 
@@ -61,7 +60,7 @@ Route::get('/test-deadline', function () {
     $docs  = \App\Models\Document::whereNotNull('pic_id')->whereNull('return_actual_date')->take(3)->get();
 
     if ($docs->isEmpty()) {
-        return 'Tidak ada dokumen yang sudah di-assign ke PIC! Assign dulu proyek ke PIC dari Asisten Manager.';
+        return 'Tidak ada dokumen yang sudah di-assign ke PIC!';
     }
 
     $labels = [];
@@ -83,7 +82,12 @@ Route::get('/test-deadline', function () {
 
 Route::get('/clear-today-logs', function () {
     $count = \App\Models\NotificationLog::whereDate('sent_at', \Carbon\Carbon::today())->delete();
-    return "Berhasil hapus {$count} log notifikasi hari ini. Sekarang coba jalankan /cron/notify-warnings lagi.";
+    return "Berhasil hapus {$count} log notifikasi hari ini.";
+});
+
+Route::get('/clear-all-logs', function () {
+    $count = \App\Models\NotificationLog::where('id', '>=', 1)->delete();
+    return "Berhasil hapus {$count} log notifikasi. Sekarang coba jalankan cron lagi.";
 });
 
 Route::get('/{any}', function () {
