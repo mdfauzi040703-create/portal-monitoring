@@ -32,8 +32,7 @@ Route::get('/cron/notify-warnings/{secret}', function ($secret) {
     }
     \Illuminate\Support\Facades\Artisan::call('notify:warnings');
     $output = \Illuminate\Support\Facades\Artisan::output();
-    $sentCount = substr_count($output, 'terkirim ke');
-    return "OK. {$sentCount} notifikasi diproses pada " . now()->format('d M Y H:i');
+    return '<pre>' . $output . '</pre>';
 });
 
 Route::get('/test-email', function () {
