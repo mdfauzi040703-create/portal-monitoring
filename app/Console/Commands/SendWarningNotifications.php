@@ -12,22 +12,25 @@ class SendWarningNotifications extends Command {
     protected $signature   = 'notify:warnings';
     protected $description = 'Kirim early warning dan alert ke PIC';
 
-    public function handle() {
-        $today = Carbon::today();
+public function handle() {
+    $today = Carbon::today();
 
-        $documents = Document::with(['pic','project'])
-            ->whereNull('return_actual_date')
-            ->get();
+    $documents = Document::with(['pic','project'])
+        ->whereNull('return_actual_date')
+        ->get();
 
-foreach ($documents as $doc) {
-    // Skip dokumen yang belum punya deadline atau belum di-assign ke PIC
-    if (!$doc->review_deadline || !$doc->pic_id) continue;
+    $this->info("Total dokumen belum selesai: " . $documents->count());
 
-    $deadline = Carbon::parse($doc->review_deadline)->startOfDay();
-    $diff = (int) round($today->diffInDays($deadline, false));
+    foreach ($documents as $doc) {
+        if (!$doc->review_deadline || !$doc->pic_id) continue;
 
-            // diff: +1 = H-1, 0 = hari H, -1 = H+1
-            if (!in_array($diff, [1, 0, -1])) continue;
+        $deadline = Carbon::parse($doc->review_deadline)->startOfDay();
+        $diff = (int) round($today->diffInDays($deadline, false));
+
+        $this->info("Dokumen {$doc->nomor_dokumen}: deadline={$doc->review_deadline}, diff={$diff}");
+
+        // diff: +1 = H-1, 0 = hari H, -1 = H+1
+        if (!in_array($diff, [1, 0, -1])) continue;
 
             $type  = $diff === 1 ? 'early_warning' : 'alert';
             $label = match($diff) {
