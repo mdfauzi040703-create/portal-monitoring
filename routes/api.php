@@ -18,7 +18,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('/notification-logs', NotificationLogController::class);
     Route::apiResource('/users',             UserController::class);
     Route::put('/users/{user}', [UserController::class, 'update']);
-
+});
 Route::get('/debug-notif', function() {
     $today = \Carbon\Carbon::now('Asia/Jakarta')->startOfDay();
     
@@ -44,5 +44,4 @@ Route::get('/debug-notif', function() {
         'documents' => $docs,
         'logs' => $logs,
     ], 200, [], JSON_PRETTY_PRINT);
-});
-});
+})->withoutMiddleware(['auth:sanctum', 'auth']);
