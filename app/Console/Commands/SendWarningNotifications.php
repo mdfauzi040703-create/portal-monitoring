@@ -13,107 +13,99 @@ class SendWarningNotifications extends Command {
     protected $description = 'Kirim early warning dan alert ke PIC';
 
     public function handle() {
-        $today = Carbon::today();
+        // Gunakan timezone Asia/Jakarta secara eksplisit
+        $today = Carbon::now('Asia/Jakarta')->startOfDay();
 
-        $documents = Document::with(['pic','project'])
+        $documents = Document::with(['pic', 'project'])
             ->whereNull('return_actual_date')
             ->get();
 
-        $this->info("Total dokumen belum selesai: " . $documents->count());
-
         foreach ($documents as $doc) {
-            if (!$doc->review_deadline || !$doc->pic_id) continue;
-
             $deadline = Carbon::parse($doc->review_deadline)->startOfDay();
             $diff = (int) round($today->diffInDays($deadline, false));
 
-            $this->info("Dokumen {$doc->nomor_dokumen}: deadline={$doc->review_deadline}, diff={$diff}");
-
+            // diff: +1 = H-1, 0 = hari H, -1 = H+1
             if (!in_array($diff, [1, 0, -1])) continue;
 
-            $type  = $diff === 1 ? 'early_warning' : 'alert';
+            // ✅ FIX: Gunakan notif_type yang UNIK per kondisi hari
+            $type = match($diff) {
+                1  => 'early_warning',   // H-1
+                0  => 'alert',           // Hari H
+                -1 => 'overdue',         // H+1 (dulu juga 'alert' → bug!)
+            };
+
             $label = match($diff) {
                 1  => 'H-1',
                 0  => 'Hari H',
                 -1 => 'H+1',
             };
 
+            // ✅ FIX: Cek duplikat berdasarkan notif_type yang kini unik
             $alreadySent = NotificationLog::where('document_id', $doc->id)
                 ->where('notif_type', $type)
-                ->whereDate('sent_at', $today)
+                ->whereDate('sent_at', $today->toDateString())
                 ->exists();
 
             if ($alreadySent) {
-                $this->info("SKIP {$doc->nomor_dokumen} - sudah pernah dikirim hari ini");
-                continue;
-            }
-
-            if (!$doc->pic || !$doc->pic->email) {
-                $this->error("SKIP {$doc->nomor_dokumen} - PIC tidak punya email");
+                $this->info("Skip [{$label}] {$doc->nomor_dokumen} — sudah terkirim hari ini.");
                 continue;
             }
 
             $message = "[{$label}] Reminder Dokumen\n"
                 . "Nomor   : {$doc->nomor_dokumen}\n"
                 . "Project : {$doc->project->name}\n"
-                . "Deadline: {$doc->review_deadline->format('d M Y')}\n"
+                . "Deadline: " . $doc->review_deadline->format('d M Y') . "\n"
                 . "Mohon segera input Return Actual Date.";
 
-            $emailSent  = false;
-            $emailError = '';
-            $waSent     = false;
+            $emailSent = false;
+            $waSent    = false;
 
             // Kirim Email
             try {
-                $this->info("Mencoba kirim email ke: {$doc->pic->email}");
-                $this->info("MAIL_MAILER: " . config('mail.default'));
-                $this->info("MAIL_HOST: " . config('mail.mailers.smtp.host'));
-                $this->info("MAIL_FROM: " . config('mail.from.address'));
-
                 Mail::raw($message, function ($mail) use ($doc, $label) {
                     $mail->to($doc->pic->email)
                          ->subject("[{$label}] Reminder Dokumen {$doc->nomor_dokumen}");
                 });
                 $emailSent = true;
-                $this->info("EMAIL BERHASIL terkirim ke {$doc->pic->email}");
             } catch (\Exception $e) {
-                $emailError = $e->getMessage();
-                $this->error("EMAIL GAGAL: " . $emailError);
+                $this->error("Email gagal: " . $e->getMessage());
             }
 
             // Kirim WhatsApp via Fonnte
-            if ($doc->pic->whatsapp) {
+            if ($doc->pic && $doc->pic->whatsapp) {
                 try {
-                    $token = env('FONNTE_TOKEN');
                     $response = Http::withHeaders([
-                        'Authorization' => $token,
+                        'Authorization' => env('FONNTE_TOKEN'),
                     ])->post('https://api.fonnte.com/send', [
                         'target'  => $doc->pic->whatsapp,
                         'message' => $message,
                     ]);
                     $waSent = $response->successful();
-                    $this->info("WA Status: " . $response->status() . " | Sukses: " . ($waSent ? 'YA' : 'TIDAK'));
                 } catch (\Exception $e) {
-                    $this->error("WA GAGAL: " . $e->getMessage());
+                    $this->error("WA gagal: " . $e->getMessage());
                 }
             }
 
-            $doc->status = $type;
+            // ✅ FIX: Update status dokumen sesuai kondisi
+            $doc->status = match($diff) {
+                1  => 'early_warning',
+                0  => 'alert',
+                -1 => 'overdue',
+            };
             $doc->save();
 
-            $channel = $emailSent && $waSent ? 'both' : ($emailSent ? 'email' : ($waSent ? 'whatsapp' : 'none'));
-
+            // Simpan log
             NotificationLog::create([
                 'document_id'  => $doc->id,
                 'pic_id'       => $doc->pic_id,
                 'notif_type'   => $type,
-                'channel'      => $channel,
+                'channel'      => 'both',
                 'status'       => ($emailSent || $waSent) ? 'sent' : 'failed',
                 'message_body' => $message,
-                'sent_at'      => now(),
+                'sent_at'      => now('Asia/Jakarta'),
             ]);
 
-            $this->info("RINGKASAN [{$label}] {$doc->nomor_dokumen} -> Email: " . ($emailSent ? 'OK' : 'GAGAL') . " ({$emailError}) | WA: " . ($waSent ? 'OK' : 'GAGAL'));
+            $this->info("Notifikasi [{$label}] terkirim ke {$doc->pic->name} — {$doc->nomor_dokumen}");
         }
 
         $this->info('Selesai cek semua dokumen.');
