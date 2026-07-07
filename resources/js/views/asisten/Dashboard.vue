@@ -35,7 +35,7 @@
     <div class="text-sm font-medium text-green-700">{{ recentlyDone.length }} dokumen baru selesai dikirim PIC</div>
     <div class="text-xs text-green-600 mt-0.5">Cek di menu Semua Dokumen untuk lihat file yang dikirim.</div>
   </div>
-  <router-link to="/manager/dokumen"
+  <router-link to="/dokumen"
     class="ml-auto text-xs bg-green-600 text-white px-3 py-1.5 rounded-lg hover:bg-green-700 transition whitespace-nowrap">
     Lihat sekarang →
   </router-link>
@@ -44,7 +44,7 @@
         <div class="text-sm font-medium text-amber-700">{{ summary.waiting }} proyek menunggu di-assign ke PIC</div>
         <div class="text-xs text-amber-600 mt-0.5">Segera buka menu Proyek Masuk untuk assign.</div>
       </div>
-      <router-link to="/manager/proyek-masuk"
+      <router-link to="/dokumen"
         class="ml-auto text-xs bg-amber-500 text-white px-3 py-1.5 rounded-lg hover:bg-amber-600 transition whitespace-nowrap">
         Lihat sekarang →
       </router-link>
@@ -112,7 +112,7 @@
     <div class="text-sm font-medium">Lihat semua proyek yang sedang berjalan</div>
     <div class="text-xs text-gray-400 mt-0.5">Detail lengkap, filter status, dan riwayat lengkap tersedia di Semua Dokumen</div>
   </div>
-  <router-link to="/manager/dokumen"
+  <router-link to="/dokumen"
     class="text-xs bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition whitespace-nowrap">
     Buka Semua Dokumen →
   </router-link>
