@@ -52,7 +52,7 @@
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2 flex-wrap">
                 <span class="text-sm font-medium">
-                  {{ log.notif_type === 'early_warning' ? 'Early Warning' : 'Alert' }}
+                  {{ log.notif_type === 'early_warning' ? 'H-1 Early Warning' : log.notif_type === 'overdue' ? 'H+1 Overdue' : 'Hari H Alert' }}
                 </span>
                 <span :class="log.status === 'sent' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'"
                   class="text-xs px-1.5 py-0.5 rounded-full">
@@ -102,7 +102,7 @@
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2 flex-wrap">
                 <span class="text-sm font-medium">
-                  {{ log.notif_type === 'early_warning' ? 'Early Warning' : 'Alert' }}
+                  {{ log.notif_type === 'early_warning' ? 'H-1 Early Warning' : log.notif_type === 'overdue' ? 'H+1 Overdue' : 'Hari H Alert' }}
                 </span>
                 <span :class="log.status === 'sent' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'"
                   class="text-xs px-1.5 py-0.5 rounded-full">
@@ -170,22 +170,8 @@ function iconClass(log) {
 onMounted(async () => {
   loading.value = true
   try {
-    // Ambil semua dokumen milik asisten ini
-    const docRes  = await api.get('/documents')
-    const myDocIds = docRes.data
-      .filter(d => d.asisten_id === auth.user?.id)
-      .map(d => d.id)
-
-    if (myDocIds.length === 0) {
-      logs.value = []
-      return
-    }
-
-    // Ambil semua log lalu filter berdasarkan dokumen milik asisten
     const logRes  = await api.get('/notification-logs')
-    logs.value = (logRes.data.data || []).filter(l =>
-      myDocIds.includes(l.document_id)
-    )
+    logs.value = logRes.data.data || logRes.data || []
   } finally {
     loading.value = false
   }
