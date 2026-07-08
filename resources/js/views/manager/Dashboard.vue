@@ -67,59 +67,20 @@
       </div>
     </div>
 
-    <!-- Tabel riwayat -->
-    <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
-      <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-        <div class="text-sm font-medium">Daftar Dokumen Masuk</div>
-        <router-link to="/manager/proyek-masuk"
-          class="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition">
-          Lihat Proyek Masuk →
-        </router-link>
+
+    <!-- Buka Semua Dokumen -->
+    <div class="bg-white border border-gray-200 rounded-xl p-5 flex items-center justify-between mb-5">
+      <div>
+        <div class="text-sm font-medium">Lihat semua dokumen</div>
+        <div class="text-xs text-gray-400 mt-0.5">Detail lengkap, filter status, dan riwayat tersedia di Semua Dokumen</div>
       </div>
-      <table class="w-full text-sm">
-        <thead>
-          <tr class="border-b border-gray-100 bg-gray-50">
-            <th class="text-left px-4 py-3 text-xs text-gray-500 font-medium">#</th>
-            <th class="text-left px-4 py-3 text-xs text-gray-500 font-medium">Nomor Dokumen</th>
-            <th class="text-left px-4 py-3 text-xs text-gray-500 font-medium">Project</th>
-            <th class="text-left px-4 py-3 text-xs text-gray-500 font-medium">Tgl Input</th>
-            <th class="text-left px-4 py-3 text-xs text-gray-500 font-medium">PIC</th>
-            <th class="text-left px-4 py-3 text-xs text-gray-500 font-medium">Deadline</th>
-            <th class="text-left px-4 py-3 text-xs text-gray-500 font-medium">Status Pengiriman</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="(doc, i) in myDocs" :key="doc.id"
-            class="border-b border-gray-50 hover:bg-gray-50 transition">
-            <td class="px-4 py-3 text-gray-400 text-xs">{{ String(i+1).padStart(3,'0') }}</td>
-            <td class="px-4 py-3 font-medium text-xs">{{ doc.nomor_dokumen }}</td>
-            <td class="px-4 py-3">
-              <span class="bg-blue-50 text-blue-700 text-xs px-2 py-0.5 rounded-full border border-blue-100">
-                {{ doc.project?.name }}
-              </span>
-            </td>
-            <td class="px-4 py-3 text-xs text-gray-500 font-mono">{{ formatDateTime(doc.created_at) }}</td>
-            <td class="px-4 py-3 text-xs">
-              <span v-if="doc.pic" class="text-blue-600 font-medium">{{ doc.pic?.name }}</span>
-              <span v-else class="text-gray-300">Belum diassign</span>
-            </td>
-            <td class="px-4 py-3 text-xs text-gray-500">
-              {{ doc.review_deadline ? formatDate(doc.review_deadline) : '—' }}
-            </td>
-            <td class="px-4 py-3">
-              <span :class="submitStatusClass(doc.submit_status)" class="text-xs px-2 py-0.5 rounded-full border font-medium">
-                {{ submitStatusLabel(doc.submit_status) }}
-              </span>
-            </td>
-          </tr>
-          <tr v-if="myDocs.length === 0">
-            <td colspan="7" class="px-4 py-10 text-center text-gray-400 text-sm">Belum ada dokumen</td>
-          </tr>
-        </tbody>
-      </table>
+      <router-link to="/manager/dokumen"
+        class="text-xs bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition whitespace-nowrap flex-shrink-0">
+        Buka Semua Dokumen →
+      </router-link>
     </div>
 
-    <!-- Modal detail project -->
+        <!-- Modal detail project -->
     <div v-if="showDetail" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
       <div class="bg-white rounded-2xl border border-gray-200 shadow-xl w-full max-w-2xl max-h-[85vh] flex flex-col">
         <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
