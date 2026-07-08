@@ -25,20 +25,20 @@
             <td colspan="6" class="px-5 py-8 text-center text-gray-400">Belum ada log notifikasi</td>
           </tr>
           <tr v-for="log in logs" :key="log.id" class="hover:bg-gray-50">
-            <td class="px-5 py-3 text-gray-600 whitespace-nowrap">{{ formatDateTime(log.sent_at ?? log.created_at) }}</td>
-            <td class="px-5 py-3 text-gray-800">{{ log.document?.nomor_dokumen ?? '-' }}</td>
-            <td class="px-5 py-3 text-gray-600">{{ log.user?.name ?? '-' }}</td>
-            <td class="px-5 py-3">
-              <span :class="tipeClass(log.tipe)" class="px-2 py-0.5 rounded-full text-xs font-medium">
-                {{ log.tipe ?? '-' }}
-              </span>
-            </td>
-            <td class="px-5 py-3 text-gray-600 capitalize">{{ log.channel ?? '-' }}</td>
-            <td class="px-5 py-3">
-              <span :class="log.status === 'terkirim' ? 'text-green-600' : 'text-red-500'" class="text-xs font-medium">
-                {{ log.status === 'terkirim' ? '✓ Terkirim' : '✗ Gagal' }}
-              </span>
-            </td>
+            <!-- SESUDAH -->
+<td class="px-5 py-3 text-gray-800">{{ log.document?.nomor_dokumen ?? '-' }}</td>
+<td class="px-5 py-3 text-gray-600">{{ log.pic?.name ?? '-' }}</td>
+<td class="px-5 py-3">
+  <span :class="tipeClass(log.notif_type)" class="px-2 py-0.5 rounded-full text-xs font-medium">
+    {{ tipeLabel(log.notif_type) }}
+  </span>
+</td>
+<td class="px-5 py-3 text-gray-600 capitalize">{{ log.channel ?? '-' }}</td>
+<td class="px-5 py-3">
+  <span :class="log.status === 'sent' ? 'text-green-600' : 'text-red-500'" class="text-xs font-medium">
+    {{ log.status === 'sent' ? '✓ Terkirim' : '✗ Gagal' }}
+  </span>
+</td>
           </tr>
         </tbody>
       </table>
@@ -66,10 +66,18 @@ function formatDateTime(d) {
   return new Date(d).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
 
+// SESUDAH
+function tipeLabel(tipe) {
+  if (tipe === 'early_warning') return 'H-1'
+  if (tipe === 'alert')         return 'Hari H'
+  if (tipe === 'overdue')       return 'H+1'
+  return tipe ?? '-'
+}
+
 function tipeClass(tipe) {
-  if (tipe === 'H-1') return 'bg-yellow-100 text-yellow-700'
-  if (tipe === 'H') return 'bg-orange-100 text-orange-700'
-  if (tipe === 'H+1' || tipe === 'overdue') return 'bg-red-100 text-red-700'
+  if (tipe === 'early_warning') return 'bg-yellow-100 text-yellow-700'
+  if (tipe === 'alert')         return 'bg-orange-100 text-orange-700'
+  if (tipe === 'overdue')       return 'bg-red-100 text-red-700'
   return 'bg-gray-100 text-gray-600'
 }
 </script>
