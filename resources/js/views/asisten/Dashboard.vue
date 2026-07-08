@@ -28,9 +28,10 @@
       </svg>
       <div>
         <div class="text-sm font-medium text-amber-700">{{ summary.waiting }} proyek menunggu di-assign ke PIC</div>
-        <div class="text-xs text-amber-600 mt-0.5">Segera buka menu Proyek Masuk untuk assign.</div>
+        <div class="text-xs text-amber-600 mt-0.5">Segera buka menu Dokumen Masuk untuk assign.</div>
       </div>
-      <router-link to="/ProyekMasuk"
+      <!-- FIX 1: route yang benar -->
+      <router-link to="/dokumen-masuk"
         class="ml-auto text-xs bg-amber-500 text-white px-3 py-1.5 rounded-lg hover:bg-amber-600 transition whitespace-nowrap flex-shrink-0">
         Lihat sekarang →
       </router-link>
@@ -111,7 +112,8 @@
         <div class="text-sm font-medium">Lihat dan kelola semua dokumen</div>
         <div class="text-xs text-gray-400 mt-0.5">Riwayat lengkap, status pengiriman, dan filter dokumen tersedia di Semua Dokumen</div>
       </div>
-      <router-link to="/Dokumen"
+      <!-- FIX 2: route yang benar -->
+      <router-link to="/dokumen"
         class="text-xs bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition whitespace-nowrap flex-shrink-0">
         Buka Semua Dokumen →
       </router-link>
@@ -284,10 +286,10 @@ const pieTotal        = ref(null)
 const pieRefs         = {}
 
 const detailTabs = [
-  { label: 'Semua',            value: 'semua' },
-  { label: 'Selesai',          value: 'selesai' },
+  { label: 'Semua',             value: 'semua' },
+  { label: 'Selesai',           value: 'selesai' },
   { label: 'Sedang Dikerjakan', value: 'assigned' },
-  { label: 'Menunggu Assign',  value: 'submitted' },
+  { label: 'Menunggu Assign',   value: 'submitted' },
 ]
 
 const summary = computed(() => ({
@@ -299,8 +301,8 @@ const summary = computed(() => ({
 }))
 
 const filteredDetail = computed(() => {
-  if (activeDetailTab.value === 'semua') return detailDocs.value
-  if (activeDetailTab.value === 'assigned') return detailDocs.value.filter(d => d.submit_status === 'assigned')
+  if (activeDetailTab.value === 'semua')     return detailDocs.value
+  if (activeDetailTab.value === 'assigned')  return detailDocs.value.filter(d => d.submit_status === 'assigned')
   if (activeDetailTab.value === 'submitted') return detailDocs.value.filter(d => d.submit_status === 'submitted')
   return detailDocs.value.filter(d => d.status === activeDetailTab.value)
 })
@@ -359,10 +361,10 @@ function buildProjects() {
     const name = doc.project?.name || '—'
     if (!map[pid]) map[pid] = { id: pid, name, total_count:0, selesai_count:0, running_count:0, waiting_count:0, alert_count:0 }
     map[pid].total_count++
-    if (doc.submit_status === 'selesai')   map[pid].selesai_count++
-    if (doc.submit_status === 'assigned')  map[pid].running_count++
-    if (doc.submit_status === 'submitted' || doc.submit_status === 'draft') map[pid].waiting_count++
-    if (doc.status === 'alert')            map[pid].alert_count++
+    if (doc.submit_status === 'selesai')                                     map[pid].selesai_count++
+    if (doc.submit_status === 'assigned')                                    map[pid].running_count++
+    if (doc.submit_status === 'submitted' || doc.submit_status === 'draft')  map[pid].waiting_count++
+    if (doc.status === 'alert')                                              map[pid].alert_count++
   })
   projects.value = Object.values(map)
 }
@@ -383,7 +385,8 @@ async function openDetail(project) {
   activeDetailTab.value = 'semua'
   showDetail.value      = true
   const res = await api.get('/documents')
-  detailDocs.value = res.data.filter(d => d.project_id === project.id && d.asisten_id === auth.user?.id)
+  // FIX 3: hapus filter asisten_id supaya semua dokumen per project muncul
+  detailDocs.value = res.data.filter(d => d.project_id === project.id)
 }
 
 function formatDate(dt) {
@@ -397,10 +400,10 @@ function submitStatusLabel(s) {
 
 function submitStatusClass(s) {
   return {
-    draft:    'bg-gray-50 text-gray-500 border-gray-200',
-    submitted:'bg-amber-50 text-amber-700 border-amber-200',
-    assigned: 'bg-blue-50 text-blue-700 border-blue-200',
-    selesai:  'bg-green-50 text-green-700 border-green-200',
+    draft:     'bg-gray-50 text-gray-500 border-gray-200',
+    submitted: 'bg-amber-50 text-amber-700 border-amber-200',
+    assigned:  'bg-blue-50 text-blue-700 border-blue-200',
+    selesai:   'bg-green-50 text-green-700 border-green-200',
   }[s] || ''
 }
 
@@ -437,7 +440,8 @@ async function addProject() {
 
 async function loadDashboard() {
   const res    = await api.get('/documents')
-  myDocs.value = res.data.filter(d => d.asisten_id === auth.user?.id)
+  // FIX 3: hapus filter asisten_id supaya semua dokumen tampil di dashboard
+  myDocs.value = res.data
   buildProjects()
 
   await nextTick()
