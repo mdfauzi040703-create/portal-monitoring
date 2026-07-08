@@ -30,11 +30,11 @@
         <div class="text-sm font-medium text-amber-700">{{ summary.waiting }} proyek menunggu di-assign ke PIC</div>
         <div class="text-xs text-amber-600 mt-0.5">Segera buka menu Dokumen Masuk untuk assign.</div>
       </div>
-      <!-- FIX 1: route yang benar -->
-      <router-link to="/dokumen-masuk"
-        class="ml-auto text-xs bg-amber-500 text-white px-3 py-1.5 rounded-lg hover:bg-amber-600 transition whitespace-nowrap flex-shrink-0">
-        Lihat sekarang →
-      </router-link>
+<!-- Tombol "Lihat sekarang" (banner kuning) -->
+<router-link to="/dokumen"
+  class="ml-auto text-xs bg-amber-500 text-white px-3 py-1.5 rounded-lg hover:bg-amber-600 transition whitespace-nowrap flex-shrink-0">
+  Lihat sekarang →
+</router-link>
     </div>
 
     <!-- Pie charts -->
@@ -113,10 +113,11 @@
         <div class="text-xs text-gray-400 mt-0.5">Riwayat lengkap, status pengiriman, dan filter dokumen tersedia di Semua Dokumen</div>
       </div>
       <!-- FIX 2: route yang benar -->
-      <router-link to="/dokumen"
-        class="text-xs bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition whitespace-nowrap flex-shrink-0">
-        Buka Semua Dokumen →
-      </router-link>
+<!-- Tombol "Buka Semua Dokumen" -->
+<router-link to="/dokumen"
+  class="text-xs bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition whitespace-nowrap flex-shrink-0">
+  Buka Semua Dokumen →
+</router-link>
     </div>
 
     <!-- Modal tambah project -->
