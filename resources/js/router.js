@@ -27,6 +27,7 @@ const routes = [
     { path: 'proyek-masuk', component: () => import('./views/asisten/ProyekMasuk.vue') },
     { path: 'dokumen',      component: () => import('./views/asisten/Dokumen.vue') },
     { path: 'log',          component: () => import('./views/asisten/LogNotifikasi.vue') },
+    { path: 'proyek-masuk',   component: () => import('./views/asisten/ProyekMasuk.vue') }, // ← tambah
     { path: 'users',        component: () => import('./views/asisten/Users.vue') },
   ]
 },
