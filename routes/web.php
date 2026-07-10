@@ -129,6 +129,20 @@ Route::get('/debug-diff', function () {
     ]);
 });
 
+Route::get('/fix-doc-38', function () {
+    $doc = \App\Models\Document::find(38);
+    $doc->return_actual_date = null;
+    $doc->submit_status = 'assigned';
+    $doc->status = 'pending';
+    $doc->save();
+    
+    return response()->json([
+        'return_actual' => $doc->return_actual_date,
+        'status'        => $doc->status,
+        'submit_status' => $doc->submit_status,
+    ]);
+});
+
 Route::get('/{any}', function () {
     return view('welcome');
 })->where('any', '.*');
