@@ -64,6 +64,19 @@ Route::get('/check-logs', function () {
     }
     return $output ?: 'Tidak ada log sama sekali';
 });
+Route::get('/check-logs-doc/{nama}', function ($nama) {
+    $doc = \App\Models\Document::where('nomor_dokumen', $nama)->first();
+    if (!$doc) return 'Dokumen tidak ditemukan';
+    
+    $logs = \App\Models\NotificationLog::where('document_id', $doc->id)
+        ->orderBy('id','desc')->get();
+    
+    $output = "Dokumen: {$doc->nomor_dokumen} | ID: {$doc->id} | PIC ID: {$doc->pic_id}<br><br>";
+    foreach ($logs as $log) {
+        $output .= "type:{$log->notif_type} | status:{$log->status} | sent_at:{$log->sent_at}<br>";
+    }
+    return $output ?: 'Tidak ada log';
+});
 
 Route::get('/test-deadline', function () {
     $today = \Carbon\Carbon::today();
