@@ -113,6 +113,22 @@ Route::get('/clear-all-logs', function () {
     return "Berhasil hapus {$count} log notifikasi. Sekarang coba jalankan cron lagi.";
 });
 
+Route::get('/debug-diff', function () {
+    $doc    = \App\Models\Document::find(38);
+    $today  = \Carbon\Carbon::now('Asia/Jakarta')->startOfDay();
+    $deadline = \Carbon\Carbon::parse($doc->review_deadline)->startOfDay();
+    $diff   = (int) round($today->diffInDays($deadline, false));
+    
+    return response()->json([
+        'server_now'   => now()->toString(),
+        'jakarta_now'  => $today->toString(),
+        'deadline'     => $deadline->toString(),
+        'diff'         => $diff,
+        'return_actual'=> $doc->return_actual_date,
+        'pic_id'       => $doc->pic_id,
+    ]);
+});
+
 Route::get('/{any}', function () {
     return view('welcome');
 })->where('any', '.*');
