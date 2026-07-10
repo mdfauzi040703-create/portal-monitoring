@@ -17,21 +17,31 @@ Route::get('/check-file/{filename}', function ($filename) {
 
 Route::get('/storage/{folder}/{filename}', function ($folder, $filename) {
     $fullPath = storage_path("app/public/{$folder}/{$filename}");
-
     if (!file_exists($fullPath)) {
         abort(404, 'File tidak ditemukan di: ' . $fullPath);
     }
-
     return response()->file($fullPath);
 });
 
+// FIX: pakai afterResponse() supaya tidak timeout di cron-job.org
 Route::get('/cron/notify-warnings/{secret}', function ($secret) {
     if ($secret !== env('CRON_SECRET', 'ganti-rahasia-ini')) {
         abort(403, 'Unauthorized');
     }
-    \Illuminate\Support\Facades\Artisan::call('notify:warnings');
-    $output = \Illuminate\Support\Facades\Artisan::output();
-    return '<pre>' . $output . '</pre>';
+
+    // Catat waktu mulai
+    $startTime = now('Asia/Jakarta')->format('d M Y H:i:s');
+
+    // Jalankan command SETELAH response dikirim ke cron-job.org
+    app()->terminating(function () {
+        \Illuminate\Support\Facades\Artisan::call('notify:warnings');
+    });
+
+    return response()->json([
+        'status'  => 'ok',
+        'message' => 'Notifikasi dijadwalkan untuk dijalankan',
+        'time'    => $startTime,
+    ]);
 });
 
 Route::get('/test-email', function () {
