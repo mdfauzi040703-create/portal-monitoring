@@ -154,6 +154,13 @@ Route::get('/check-pic/{id}', function ($id) {
     ]);
 });
 
+Route::get('/update-pic-wa', function () {
+    $user = \App\Models\User::find(14);
+    $user->whatsapp = '6282386462863';
+    $user->save();
+    return 'WA updated: ' . $user->whatsapp;
+});
+
 Route::get('/{any}', function () {
     return view('welcome');
 })->where('any', '.*');
