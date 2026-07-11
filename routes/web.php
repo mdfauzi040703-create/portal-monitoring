@@ -143,6 +143,17 @@ Route::get('/fix-doc-38', function () {
     ]);
 });
 
+Route::get('/check-pic/{id}', function ($id) {
+    $user = \App\Models\User::find($id);
+    if (!$user) return 'User tidak ditemukan';
+    return response()->json([
+        'id'        => $user->id,
+        'name'      => $user->name,
+        'whatsapp'  => $user->whatsapp,
+        'email'     => $user->email,
+    ]);
+});
+
 Route::get('/{any}', function () {
     return view('welcome');
 })->where('any', '.*');
