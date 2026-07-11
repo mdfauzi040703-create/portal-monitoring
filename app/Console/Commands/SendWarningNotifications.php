@@ -112,13 +112,16 @@ class SendWarningNotifications extends Command {
         }
 
         try {
-            $response = Http::withToken(env('WHATSAPP_TOKEN'))
-                ->post('https://graph.facebook.com/v25.0/' . env('WHATSAPP_PHONE_NUMBER_ID') . '/messages', [
-                    'messaging_product' => 'whatsapp',
-                    'to'                => $phone,
-                    'type'              => 'text',
-                    'text'              => ['body' => $message],
-                ]);
+$response = Http::withToken(env('WHATSAPP_TOKEN'))
+    ->post('https://graph.facebook.com/v25.0/' . env('WHATSAPP_PHONE_NUMBER_ID') . '/messages', [
+        'messaging_product' => 'whatsapp',
+        'to'                => $phone,
+        'type'              => 'template',
+        'template'          => [
+            'name'     => 'hello_world',
+            'language' => ['code' => 'en_US'],
+        ],
+    ]);
 
             if ($response->successful()) {
                 $this->info("WA terkirim ke {$phone}");
