@@ -160,7 +160,25 @@ Route::get('/update-pic-wa', function () {
     $user->save();
     return 'WA updated: ' . $user->whatsapp;
 });
+Route::get('/test-wa', function () {
+    $phone = '6282386462863';
+    $message = "Test notifikasi Portal Monitoring";
+    
+    $response = \Illuminate\Support\Facades\Http::withToken(env('WHATSAPP_TOKEN'))
+        ->post('https://graph.facebook.com/v25.0/' . env('WHATSAPP_PHONE_NUMBER_ID') . '/messages', [
+            'messaging_product' => 'whatsapp',
+            'to'                => $phone,
+            'type'              => 'text',
+            'text'              => ['body' => $message],
+        ]);
 
+    return response()->json([
+        'status'   => $response->status(),
+        'response' => $response->json(),
+        'token'    => substr(env('WHATSAPP_TOKEN'), 0, 20) . '...',
+        'phone_id' => env('WHATSAPP_PHONE_NUMBER_ID'),
+    ]);
+});
 Route::get('/{any}', function () {
     return view('welcome');
 })->where('any', '.*');
