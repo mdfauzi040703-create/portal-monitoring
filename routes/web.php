@@ -194,6 +194,23 @@ Route::get('/cron/notify-warnings/{secret}', function ($secret) {
         'time'    => now('Asia/Jakarta')->format('d M Y H:i:s'),
     ]);
 });
+
+Route::get('/fix-doc-test', function () {
+    $doc = \App\Models\Document::find(38);
+    $doc->return_actual_date = null;
+    $doc->review_deadline = \Carbon\Carbon::now('Asia/Jakarta')->addDay()->format('Y-m-d');
+    $doc->submit_status = 'assigned';
+    $doc->status = 'pending';
+    $doc->save();
+    
+    return response()->json([
+        'nomor'          => $doc->nomor_dokumen,
+        'deadline'       => $doc->review_deadline,
+        'return_actual'  => $doc->return_actual_date,
+        'status'         => $doc->status,
+    ]);
+});
+
 Route::get('/{any}', function () {
     return view('welcome');
 })->where('any', '.*');
