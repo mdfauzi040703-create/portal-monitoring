@@ -179,6 +179,21 @@ Route::get('/test-wa', function () {
         'phone_id' => env('WHATSAPP_PHONE_NUMBER_ID'),
     ]);
 });
+
+Route::get('/cron/notify-warnings/{secret}', function ($secret) {
+    if ($secret !== env('CRON_SECRET', 'ganti-rahasia-ini')) {
+        abort(403, 'Unauthorized');
+    }
+
+    \Illuminate\Support\Facades\Artisan::call('notify:warnings');
+    $output = \Illuminate\Support\Facades\Artisan::output();
+    
+    return response()->json([
+        'status'  => 'ok',
+        'output'  => $output,
+        'time'    => now('Asia/Jakarta')->format('d M Y H:i:s'),
+    ]);
+});
 Route::get('/{any}', function () {
     return view('welcome');
 })->where('any', '.*');
