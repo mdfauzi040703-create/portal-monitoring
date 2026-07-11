@@ -13,25 +13,23 @@ class SendWarningNotifications extends Command {
     protected $description = 'Kirim early warning dan alert ke PIC';
 
     public function handle() {
-        // Gunakan timezone Asia/Jakarta secara eksplisit
         $today = Carbon::now('Asia/Jakarta')->startOfDay();
 
         $documents = Document::with(['pic', 'project'])
             ->whereNull('return_actual_date')
+            ->whereNotNull('pic_id')
             ->get();
 
         foreach ($documents as $doc) {
             $deadline = Carbon::parse($doc->review_deadline)->startOfDay();
             $diff = (int) round($today->diffInDays($deadline, false));
 
-            // diff: +1 = H-1, 0 = hari H, -1 = H+1
             if (!in_array($diff, [1, 0, -1])) continue;
 
-            // ✅ FIX: Gunakan notif_type yang UNIK per kondisi hari
             $type = match($diff) {
-                1  => 'early_warning',   // H-1
-                0  => 'alert',           // Hari H
-                -1 => 'overdue',         // H+1 (dulu juga 'alert' → bug!)
+                1  => 'early_warning',
+                0  => 'alert',
+                -1 => 'overdue',
             };
 
             $label = match($diff) {
@@ -40,7 +38,6 @@ class SendWarningNotifications extends Command {
                 -1 => 'H+1',
             };
 
-            // ✅ FIX: Cek duplikat berdasarkan notif_type yang kini unik
             $alreadySent = NotificationLog::where('document_id', $doc->id)
                 ->where('notif_type', $type)
                 ->whereDate('sent_at', $today->toDateString())
@@ -54,7 +51,7 @@ class SendWarningNotifications extends Command {
             $message = "[{$label}] Reminder Dokumen\n"
                 . "Nomor   : {$doc->nomor_dokumen}\n"
                 . "Project : {$doc->project->name}\n"
-                . "Deadline: " . $doc->review_deadline->format('d M Y') . "\n"
+                . "Deadline: " . Carbon::parse($doc->review_deadline)->format('d M Y') . "\n"
                 . "Mohon segera input Return Actual Date.";
 
             $emailSent = false;
@@ -67,26 +64,17 @@ class SendWarningNotifications extends Command {
                          ->subject("[{$label}] Reminder Dokumen {$doc->nomor_dokumen}");
                 });
                 $emailSent = true;
+                $this->info("Email terkirim ke {$doc->pic->email}");
             } catch (\Exception $e) {
                 $this->error("Email gagal: " . $e->getMessage());
             }
 
-            // Kirim WhatsApp via Fonnte
+            // Kirim WhatsApp via Meta Cloud API
             if ($doc->pic && $doc->pic->whatsapp) {
-                try {
-                    $response = Http::withHeaders([
-                        'Authorization' => env('FONNTE_TOKEN'),
-                    ])->post('https://api.fonnte.com/send', [
-                        'target'  => $doc->pic->whatsapp,
-                        'message' => $message,
-                    ]);
-                    $waSent = $response->successful();
-                } catch (\Exception $e) {
-                    $this->error("WA gagal: " . $e->getMessage());
-                }
+                $waSent = $this->sendWhatsApp($doc->pic->whatsapp, $message);
             }
 
-            // ✅ FIX: Update status dokumen sesuai kondisi
+            // Update status dokumen
             $doc->status = match($diff) {
                 1  => 'early_warning',
                 0  => 'alert',
@@ -110,5 +98,38 @@ class SendWarningNotifications extends Command {
 
         $this->info('Selesai cek semua dokumen.');
         return 0;
+    }
+
+    private function sendWhatsApp(string $phone, string $message): bool
+    {
+        // Format nomor: hilangkan 0 di depan, tambah 62
+        $phone = preg_replace('/[^0-9]/', '', $phone);
+        if (str_starts_with($phone, '0')) {
+            $phone = '62' . substr($phone, 1);
+        }
+        if (!str_starts_with($phone, '62')) {
+            $phone = '62' . $phone;
+        }
+
+        try {
+            $response = Http::withToken(env('WHATSAPP_TOKEN'))
+                ->post('https://graph.facebook.com/v25.0/' . env('WHATSAPP_PHONE_NUMBER_ID') . '/messages', [
+                    'messaging_product' => 'whatsapp',
+                    'to'                => $phone,
+                    'type'              => 'text',
+                    'text'              => ['body' => $message],
+                ]);
+
+            if ($response->successful()) {
+                $this->info("WA terkirim ke {$phone}");
+                return true;
+            } else {
+                $this->error("WA gagal ke {$phone}: " . $response->body());
+                return false;
+            }
+        } catch (\Exception $e) {
+            $this->error("WA error: " . $e->getMessage());
+            return false;
+        }
     }
 }
