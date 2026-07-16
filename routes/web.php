@@ -46,17 +46,10 @@ Route::get('/cron/notify-warnings/{secret}', function ($secret) {
 
 Route::get('/test-email', function () {
     try {
-        $client = \Mailtrap\MailtrapClient::initSendingEmails(
-            apiKey: env('MAILTRAP_API_KEY')
-        );
-
-        $email = (new \Mailtrap\Mime\MailtrapEmail())
-            ->from(new \Symfony\Component\Mime\Address('hello@demomailtrap.co', 'Portal Monitoring'))
-            ->to(new \Symfony\Component\Mime\Address('md.fauzi040703@gmail.com'))
-            ->subject('Test Email Portal Monitoring')
-            ->text('Ini email test dari Portal Monitoring.');
-
-        $client->send($email);
+        \Illuminate\Support\Facades\Mail::raw('Ini email test dari Portal Monitoring.', function ($mail) {
+            $mail->to('md.fauzi040703@gmail.com')
+                 ->subject('Test Email Portal Monitoring');
+        });
         return 'Email berhasil dikirim! Cek inbox md.fauzi040703@gmail.com';
     } catch (\Exception $e) {
         return 'GAGAL: ' . $e->getMessage();
