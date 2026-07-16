@@ -47,10 +47,10 @@ Route::get('/cron/notify-warnings/{secret}', function ($secret) {
 Route::get('/test-email', function () {
     try {
         \Illuminate\Support\Facades\Mail::raw('Ini email test dari Portal Monitoring.', function ($mail) {
-            $mail->to(env('MAIL_USERNAME'))
+            $mail->to('md.fauzi531@gmail.com')  // ← ganti ke email kamu
                  ->subject('Test Email Portal Monitoring');
         });
-        return 'Email berhasil dikirim! Cek inbox ' . env('MAIL_USERNAME');
+        return 'Email berhasil dikirim! Cek inbox md.fauzi531@gmail.com';
     } catch (\Exception $e) {
         return 'GAGAL: ' . $e->getMessage();
     }
