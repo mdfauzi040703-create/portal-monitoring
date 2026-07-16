@@ -1,5 +1,8 @@
 <?php
 use Illuminate\Support\Facades\Route;
+use Brevo\Client\Configuration;
+use Brevo\Client\Api\TransactionalEmailsApi;
+use Brevo\Client\Model\SendSmtpEmail;
 
 Route::get('/check-file/{filename}', function ($filename) {
     $path = storage_path('app/public/documents/' . $filename);
@@ -46,10 +49,22 @@ Route::get('/cron/notify-warnings/{secret}', function ($secret) {
 
 Route::get('/test-email', function () {
     try {
-        \Illuminate\Support\Facades\Mail::raw('Ini email test dari Portal Monitoring.', function ($mail) {
-            $mail->to('md.fauzi040703@gmail.com')
-                 ->subject('Test Email Portal Monitoring');
-        });
+        $config = Brevo\Client\Configuration::getDefaultConfiguration()
+            ->setApiKey('api-key', env('BREVO_API_KEY'));
+
+        $apiInstance = new Brevo\Client\Api\TransactionalEmailsApi(
+            new GuzzleHttp\Client(),
+            $config
+        );
+
+        $sendSmtpEmail = new \Brevo\Client\Model\SendSmtpEmail([
+            'sender'  => ['name' => 'Portal Monitoring', 'email' => 'monitoringportal00@gmail.com'],
+            'to'      => [['email' => 'md.fauzi040703@gmail.com', 'name' => 'Fauzi']],
+            'subject' => 'Test Email Portal Monitoring',
+            'textContent' => 'Ini email test dari Portal Monitoring.',
+        ]);
+
+        $apiInstance->sendTransacEmail($sendSmtpEmail);
         return 'Email berhasil dikirim! Cek inbox md.fauzi040703@gmail.com';
     } catch (\Exception $e) {
         return 'GAGAL: ' . $e->getMessage();
