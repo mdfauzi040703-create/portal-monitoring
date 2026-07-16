@@ -49,23 +49,22 @@ Route::get('/cron/notify-warnings/{secret}', function ($secret) {
 
 Route::get('/test-email', function () {
     try {
-        $config = Brevo\Client\Configuration::getDefaultConfiguration()
-            ->setApiKey('api-key', env('BREVO_API_KEY'));
-
-        $apiInstance = new Brevo\Client\Api\TransactionalEmailsApi(
-            new GuzzleHttp\Client(),
-            $config
-        );
-
-        $sendSmtpEmail = new \Brevo\Client\Model\SendSmtpEmail([
-            'sender'  => ['name' => 'Portal Monitoring', 'email' => 'monitoringportal00@gmail.com'],
-            'to'      => [['email' => 'md.fauzi040703@gmail.com', 'name' => 'Fauzi']],
-            'subject' => 'Test Email Portal Monitoring',
+        $response = \Illuminate\Support\Facades\Http::withHeaders([
+            'accept'       => 'application/json',
+            'api-key'      => env('BREVO_API_KEY'),
+            'content-type' => 'application/json',
+        ])->post('https://api.brevo.com/v3/smtp/email', [
+            'sender'      => ['name' => 'Portal Monitoring', 'email' => 'monitoringportal00@gmail.com'],
+            'to'          => [['email' => 'md.fauzi040703@gmail.com', 'name' => 'Fauzi']],
+            'subject'     => 'Test Email Portal Monitoring',
             'textContent' => 'Ini email test dari Portal Monitoring.',
         ]);
 
-        $apiInstance->sendTransacEmail($sendSmtpEmail);
-        return 'Email berhasil dikirim! Cek inbox md.fauzi040703@gmail.com';
+        if ($response->successful()) {
+            return 'Email berhasil dikirim! Cek inbox md.fauzi040703@gmail.com';
+        } else {
+            return 'GAGAL: ' . $response->body();
+        }
     } catch (\Exception $e) {
         return 'GAGAL: ' . $e->getMessage();
     }
