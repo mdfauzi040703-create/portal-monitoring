@@ -218,6 +218,14 @@ Route::get('/fix-doc-test', function () {
     ]);
 });
 
+Route::get('/check-env', function () {
+    return response()->json([
+        'MAILTRAP_API_KEY' => env('MAILTRAP_API_KEY') ? 'ada' : 'kosong',
+        'MAIL_MAILER'      => env('MAIL_MAILER'),
+        'MAIL_HOST'        => env('MAIL_HOST'),
+    ]);
+});
+
 Route::get('/{any}', function () {
     return view('welcome');
 })->where('any', '.*');
