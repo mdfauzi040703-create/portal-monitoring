@@ -52,12 +52,12 @@ Route::get('/test-email', function () {
 
         $email = (new \Mailtrap\Mime\MailtrapEmail())
             ->from(new \Symfony\Component\Mime\Address('hello@demomailtrap.co', 'Portal Monitoring'))
-            ->to(new \Symfony\Component\Mime\Address('md.fauzi531@gmail.com'))
+            ->to(new \Symfony\Component\Mime\Address('md.fauzi040703@gmail.com'))
             ->subject('Test Email Portal Monitoring')
             ->text('Ini email test dari Portal Monitoring.');
 
         $client->send($email);
-        return 'Email berhasil dikirim! Cek inbox md.fauzi531@gmail.com';
+        return 'Email berhasil dikirim! Cek inbox md.fauzi040703@gmail.com';
     } catch (\Exception $e) {
         return 'GAGAL: ' . $e->getMessage();
     }
