@@ -4,7 +4,6 @@ namespace App\Console\Commands;
 use Illuminate\Console\Command;
 use App\Models\Document;
 use App\Models\NotificationLog;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Http;
 use Carbon\Carbon;
 
@@ -48,31 +47,17 @@ class SendWarningNotifications extends Command {
                 continue;
             }
 
-            $message = "[{$label}] Reminder Dokumen\n"
+            $subject = "[{$label}] Reminder Dokumen {$doc->nomor_dokumen}";
+            $message = "Halo {$doc->pic->name},\n\n"
+                . "Ini adalah reminder untuk dokumen berikut:\n\n"
                 . "Nomor   : {$doc->nomor_dokumen}\n"
                 . "Project : {$doc->project->name}\n"
-                . "Deadline: " . Carbon::parse($doc->review_deadline)->format('d M Y') . "\n"
-                . "Mohon segera input Return Actual Date.";
+                . "Deadline: " . Carbon::parse($doc->review_deadline)->format('d M Y') . "\n\n"
+                . "Mohon segera input Return Actual Date sebelum atau pada deadline.\n\n"
+                . "Portal: " . env('APP_URL');
 
-            $emailSent = false;
+            $emailSent = $this->sendEmail($doc->pic->email, $doc->pic->name, $subject, $message);
             $waSent    = false;
-
-            // Kirim Email
-            try {
-                Mail::raw($message, function ($mail) use ($doc, $label) {
-                    $mail->to($doc->pic->email)
-                         ->subject("[{$label}] Reminder Dokumen {$doc->nomor_dokumen}");
-                });
-                $emailSent = true;
-                $this->info("Email terkirim ke {$doc->pic->email}");
-            } catch (\Exception $e) {
-                $this->error("Email gagal: " . $e->getMessage());
-            }
-
-            // Kirim WhatsApp via Meta Cloud API
-            if ($doc->pic && $doc->pic->whatsapp) {
-                $waSent = $this->sendWhatsApp($doc->pic->whatsapp, $message);
-            }
 
             // Update status dokumen
             $doc->status = match($diff) {
@@ -87,8 +72,8 @@ class SendWarningNotifications extends Command {
                 'document_id'  => $doc->id,
                 'pic_id'       => $doc->pic_id,
                 'notif_type'   => $type,
-                'channel'      => 'both',
-                'status'       => ($emailSent || $waSent) ? 'sent' : 'failed',
+                'channel'      => 'email',
+                'status'       => $emailSent ? 'sent' : 'failed',
                 'message_body' => $message,
                 'sent_at'      => now('Asia/Jakarta'),
             ]);
@@ -100,38 +85,29 @@ class SendWarningNotifications extends Command {
         return 0;
     }
 
-    private function sendWhatsApp(string $phone, string $message): bool
+    private function sendEmail(string $to, string $toName, string $subject, string $body): bool
     {
-        // Format nomor: hilangkan 0 di depan, tambah 62
-        $phone = preg_replace('/[^0-9]/', '', $phone);
-        if (str_starts_with($phone, '0')) {
-            $phone = '62' . substr($phone, 1);
-        }
-        if (!str_starts_with($phone, '62')) {
-            $phone = '62' . $phone;
-        }
-
         try {
-$response = Http::withToken(env('WHATSAPP_TOKEN'))
-    ->post('https://graph.facebook.com/v25.0/' . env('WHATSAPP_PHONE_NUMBER_ID') . '/messages', [
-        'messaging_product' => 'whatsapp',
-        'to'                => $phone,
-        'type'              => 'template',
-        'template'          => [
-            'name'     => 'hello_world',
-            'language' => ['code' => 'en_US'],
-        ],
-    ]);
+            $response = Http::withHeaders([
+                'accept'       => 'application/json',
+                'api-key'      => env('BREVO_API_KEY'),
+                'content-type' => 'application/json',
+            ])->post('https://api.brevo.com/v3/smtp/email', [
+                'sender'      => ['name' => env('MAIL_FROM_NAME', 'Portal Monitoring'), 'email' => env('MAIL_FROM_ADDRESS', 'noreply@portalmonitoring.online')],
+                'to'          => [['email' => $to, 'name' => $toName]],
+                'subject'     => $subject,
+                'textContent' => $body,
+            ]);
 
             if ($response->successful()) {
-                $this->info("WA terkirim ke {$phone}");
+                $this->info("Email terkirim ke {$to}");
                 return true;
             } else {
-                $this->error("WA gagal ke {$phone}: " . $response->body());
+                $this->error("Email gagal ke {$to}: " . $response->body());
                 return false;
             }
         } catch (\Exception $e) {
-            $this->error("WA error: " . $e->getMessage());
+            $this->error("Email error: " . $e->getMessage());
             return false;
         }
     }

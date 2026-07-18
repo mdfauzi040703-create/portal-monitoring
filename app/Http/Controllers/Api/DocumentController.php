@@ -4,11 +4,33 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Document;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 
 class DocumentController extends Controller {
+
+    private function sendEmail(string $to, string $toName, string $subject, string $body): void
+    {
+        try {
+            $response = Http::withHeaders([
+                'accept'       => 'application/json',
+                'api-key'      => env('BREVO_API_KEY'),
+                'content-type' => 'application/json',
+            ])->post('https://api.brevo.com/v3/smtp/email', [
+                'sender'      => ['name' => env('MAIL_FROM_NAME', 'Portal Monitoring'), 'email' => env('MAIL_FROM_ADDRESS', 'noreply@portalmonitoring.online')],
+                'to'          => [['email' => $to, 'name' => $toName]],
+                'subject'     => $subject,
+                'textContent' => $body,
+            ]);
+
+            if (!$response->successful()) {
+                Log::error("Gagal kirim email ke {$to}: " . $response->body());
+            }
+        } catch (\Exception $e) {
+            Log::error("Email error ke {$to}: " . $e->getMessage());
+        }
+    }
 
     public function index(Request $request) {
         $query = Document::with(['project','pic','atasan','asisten','targetAsisten'])
@@ -60,36 +82,29 @@ class DocumentController extends Controller {
 
         // Manager submit ke Asisten Manager
         if ($request->has('submit_to_manager')) {
-            $request->validate([
-                'target_asisten_id' => 'required|exists:users,id',
-            ]);
+            $request->validate(['target_asisten_id' => 'required|exists:users,id']);
             $document->target_asisten_id = $request->target_asisten_id;
             $document->submit_status     = 'submitted';
             $document->save();
 
-            // Kirim email notifikasi ke Asisten Manager
             $asisten = \App\Models\User::find($request->target_asisten_id);
             $manager = $request->user();
 
             if ($asisten && $asisten->email) {
-                try {
-                    $subject = "[Dokumen Masuk] {$document->nomor_dokumen} — Perlu Di-assign ke PIC";
-                    $body    = "Halo {$asisten->name},\n\n"
-                        . "Anda mendapat dokumen baru dari Manager yang perlu di-assign ke PIC.\n\n"
-                        . "Detail Dokumen:\n"
-                        . "Nomor    : {$document->nomor_dokumen}\n"
-                        . "Project  : {$document->project->name}\n"
-                        . "Deadline : " . ($document->review_deadline ? Carbon::parse($document->review_deadline)->format('d M Y') : '-') . "\n"
-                        . "Dari     : {$manager->name}\n\n"
-                        . "Segera buka Portal Monitoring dan assign dokumen ini ke PIC.\n"
-                        . "Portal: " . env('APP_URL');
-
-                    Mail::raw($body, function ($mail) use ($asisten, $subject) {
-                        $mail->to($asisten->email)->subject($subject);
-                    });
-                } catch (\Exception $e) {
-                    Log::error("Gagal kirim email ke asisten: " . $e->getMessage());
-                }
+                $this->sendEmail(
+                    $asisten->email,
+                    $asisten->name,
+                    "[Dokumen Masuk] {$document->nomor_dokumen} — Perlu Di-assign ke PIC",
+                    "Halo {$asisten->name},\n\n"
+                    . "Anda mendapat dokumen baru dari Manager yang perlu di-assign ke PIC.\n\n"
+                    . "Detail Dokumen:\n"
+                    . "Nomor    : {$document->nomor_dokumen}\n"
+                    . "Project  : {$document->project->name}\n"
+                    . "Deadline : " . ($document->review_deadline ? Carbon::parse($document->review_deadline)->format('d M Y') : '-') . "\n"
+                    . "Dari     : {$manager->name}\n\n"
+                    . "Segera buka Portal Monitoring dan assign dokumen ini ke PIC.\n"
+                    . "Portal: " . env('APP_URL')
+                );
             }
 
             return response()->json($document->load(['project','pic','atasan','asisten','targetAsisten']));
@@ -97,9 +112,7 @@ class DocumentController extends Controller {
 
         // Asisten Manager assign ke PIC
         if ($request->has('assign_to_pic')) {
-            $request->validate([
-                'pic_id' => 'required|exists:users,id',
-            ]);
+            $request->validate(['pic_id' => 'required|exists:users,id']);
             $document->pic_id        = $request->pic_id;
             $document->atasan_id     = $request->user()->id;
             $document->submit_status = 'assigned';
@@ -110,26 +123,21 @@ class DocumentController extends Controller {
             $pic     = $document->pic;
             $asisten = $request->user();
 
-            // Kirim email notifikasi ke PIC
             if ($pic && $pic->email) {
-                try {
-                    $subject = "[Proyek Masuk] {$document->nomor_dokumen} — Tugas Baru untuk Anda";
-                    $body    = "Halo {$pic->name},\n\n"
-                        . "Anda mendapat tugas baru dari {$asisten->name}.\n\n"
-                        . "Detail Dokumen:\n"
-                        . "Nomor    : {$document->nomor_dokumen}\n"
-                        . "Project  : {$document->project->name}\n"
-                        . "Deadline : " . ($document->review_deadline ? Carbon::parse($document->review_deadline)->format('d M Y') : '-') . "\n"
-                        . "Dari     : {$asisten->name}\n\n"
-                        . "Segera selesaikan sebelum deadline.\n"
-                        . "Portal: " . env('APP_URL');
-
-                    Mail::raw($body, function ($mail) use ($pic, $subject) {
-                        $mail->to($pic->email)->subject($subject);
-                    });
-                } catch (\Exception $e) {
-                    Log::error("Gagal kirim email ke PIC: " . $e->getMessage());
-                }
+                $this->sendEmail(
+                    $pic->email,
+                    $pic->name,
+                    "[Proyek Masuk] {$document->nomor_dokumen} — Tugas Baru untuk Anda",
+                    "Halo {$pic->name},\n\n"
+                    . "Anda mendapat tugas baru dari {$asisten->name}.\n\n"
+                    . "Detail Dokumen:\n"
+                    . "Nomor    : {$document->nomor_dokumen}\n"
+                    . "Project  : {$document->project->name}\n"
+                    . "Deadline : " . ($document->review_deadline ? Carbon::parse($document->review_deadline)->format('d M Y') : '-') . "\n"
+                    . "Dari     : {$asisten->name}\n\n"
+                    . "Segera selesaikan sebelum deadline.\n"
+                    . "Portal: " . env('APP_URL')
+                );
             }
 
             return response()->json($document);
@@ -145,30 +153,25 @@ class DocumentController extends Controller {
             }
             $document->save();
 
-            // Kirim email notifikasi ke Asisten bahwa dokumen selesai
             $asisten = $document->atasan;
             $pic     = $document->pic;
 
             if ($asisten && $asisten->email) {
-                try {
-                    $subject = "[Selesai] {$document->nomor_dokumen} — Dokumen Telah Dikembalikan PIC";
-                    $body    = "Halo {$asisten->name},\n\n"
-                        . "Dokumen berikut telah diselesaikan oleh PIC.\n\n"
-                        . "Detail Dokumen:\n"
-                        . "Nomor          : {$document->nomor_dokumen}\n"
-                        . "Project        : {$document->project->name}\n"
-                        . "Deadline       : " . ($document->review_deadline ? Carbon::parse($document->review_deadline)->format('d M Y') : '-') . "\n"
-                        . "Return Actual  : " . Carbon::parse($request->return_actual_date)->format('d M Y') . "\n"
-                        . "Diselesaikan   : " . ($pic ? $pic->name : '-') . "\n\n"
-                        . "Silakan cek Portal Monitoring untuk detail lebih lanjut.\n"
-                        . "Portal: " . env('APP_URL');
-
-                    Mail::raw($body, function ($mail) use ($asisten, $subject) {
-                        $mail->to($asisten->email)->subject($subject);
-                    });
-                } catch (\Exception $e) {
-                    Log::error("Gagal kirim email selesai ke asisten: " . $e->getMessage());
-                }
+                $this->sendEmail(
+                    $asisten->email,
+                    $asisten->name,
+                    "[Selesai] {$document->nomor_dokumen} — Dokumen Telah Dikembalikan PIC",
+                    "Halo {$asisten->name},\n\n"
+                    . "Dokumen berikut telah diselesaikan oleh PIC.\n\n"
+                    . "Detail Dokumen:\n"
+                    . "Nomor          : {$document->nomor_dokumen}\n"
+                    . "Project        : {$document->project->name}\n"
+                    . "Deadline       : " . ($document->review_deadline ? Carbon::parse($document->review_deadline)->format('d M Y') : '-') . "\n"
+                    . "Return Actual  : " . Carbon::parse($request->return_actual_date)->format('d M Y') . "\n"
+                    . "Diselesaikan   : " . ($pic ? $pic->name : '-') . "\n\n"
+                    . "Silakan cek Portal Monitoring untuk detail lebih lanjut.\n"
+                    . "Portal: " . env('APP_URL')
+                );
             }
 
             return response()->json($document->load(['project','pic','atasan','asisten']));
