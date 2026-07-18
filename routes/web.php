@@ -49,18 +49,22 @@ Route::get('/cron/notify-warnings/{secret}', function ($secret) {
 
 Route::get('/test-email', function () {
     try {
-        $client = \Mailtrap\MailtrapClient::initSendingEmails(
-            apiKey: env('MAILTRAP_API_KEY')
-        );
+        $response = \Illuminate\Support\Facades\Http::withHeaders([
+            'accept'       => 'application/json',
+            'api-key'      => env('BREVO_API_KEY'),
+            'content-type' => 'application/json',
+        ])->post('https://api.brevo.com/v3/smtp/email', [
+            'sender'      => ['name' => 'Portal Monitoring', 'email' => 'noreply@portalmonitoring.online'],
+            'to'          => [['email' => 'rickyjonefer@gmail.com', 'name' => 'Ricky Jonefer']],
+            'subject'     => 'Test Email Portal Monitoring',
+            'textContent' => 'Ini email test notifikasi dari Portal Monitoring.',
+        ]);
 
-        $email = (new \Mailtrap\Mime\MailtrapEmail())
-            ->from(new \Symfony\Component\Mime\Address('noreply@portalmonitoring.online', 'Portal Monitoring'))
-            ->to(new \Symfony\Component\Mime\Address('md.fauzi040703@gmail.com'))
-            ->subject('Test Email Portal Monitoring')
-            ->text('Ini email test dari Portal Monitoring.');
-
-        $client->send($email);
-        return 'Email berhasil dikirim! Cek inbox md.fauzi040703@gmail.com';
+        if ($response->successful()) {
+            return 'Email berhasil dikirim! Cek inbox rickyjonefer@gmail.com';
+        } else {
+            return 'GAGAL: ' . $response->body();
+        }
     } catch (\Exception $e) {
         return 'GAGAL: ' . $e->getMessage();
     }
